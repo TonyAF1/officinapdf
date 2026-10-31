@@ -787,7 +787,7 @@
 	Files are combined from top to bottom. Leave Pages empty to take every page.	Datoteke se združijo od zgoraj navzdol. Če pustite Strani prazno, se vzamejo vse strani.
 	Files are combined in this order. Leave Pages empty to take every page.	Datoteke se združijo v tem vrstnem redu. Če pustite Strani prazno, se vzamejo vse strani.
 	Files for {name}	Datoteke za {name}
-	Files you open in OfficinaPDF appear here. Drop a PDF anywhere to open it.	Datoteke, ki jih odprete v PdfCraftu, se prikažejo tukaj. Spustite PDF kamor koli, da ga odprete.
+	Files you open in OfficinaPDF appear here. Drop a PDF anywhere to open it.	Datoteke, ki jih odprete v OfficinaPDFu, se prikažejo tukaj. Spustite PDF kamor koli, da ga odprete.
 	Fill	Izpolni
 	Fill & Sign	Izpolni in podpiši
 	Fill & Sign: add text	Izpolni in podpiši: dodaj besedilo
@@ -1514,7 +1514,7 @@
 	Rename	Preimenuj
 	Rename bookmark	Preimenuj zaznamek
 	Rendering: hayro (bootstrap) · UI: egui · Icons: Lucide (ISC) · Fonts: Inter, JetBrains Mono, Dancing Script (OFL)	Izris: hayro (bootstrap) · Vmesnik: egui · Ikone: Lucide (ISC) · Pisave: Inter, JetBrains Mono, Dancing Script (OFL)
-	Reopen the files that were open when OfficinaPDF last closed	Ponovno odpri datoteke, ki so bile odprte ob zadnjem zaprtju PdfCrafta
+	Reopen the files that were open when OfficinaPDF last closed	Ponovno odpri datoteke, ki so bile odprte ob zadnjem zaprtju OfficinaPDFa
 	Restore the last view (page, zoom and page display) when a document is opened again	Ob ponovnem odprtju dokumenta obnovi zadnji pogled (stran, povečavo in prikaz strani)
 	Repair log	Dnevnik popravil
 	Repairs	Popravila
@@ -2041,7 +2041,7 @@
 	Warnings	Opozorila
 	Watermark	Vodni žig
 	Weak	Šibko
-	Welcome to OfficinaPDF	Dobrodošli v PdfCraftu
+	Welcome to OfficinaPDF	Dobrodošli v OfficinaPDFu
 	What word or phrase would you like to search for?	Katero besedo ali besedno zvezo želite poiskati?
 	Whole words only	Samo cele besede
 	Width	Širina
@@ -2583,3 +2583,4 @@ animation effects	Off	Izklopljeni
 # Comments panel: each reply's own "…" menu (AI-assisted, not separately native-reviewed)
 	Options for this reply	Možnosti tega odgovora
 	Export value	Izvozna vrednost
+	Show Page Edge Shadows	Prikaži sence robov strani

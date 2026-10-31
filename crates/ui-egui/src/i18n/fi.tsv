@@ -159,7 +159,7 @@
 	Next page	Seuraava sivu
 	Previous page	Edellinen sivu
 	Current page — type a page number or label (such as iv) and press Enter	Nykyinen sivu – kirjoita sivunumero tai -tunniste (kuten iv) ja paina Enter
-	Welcome to OfficinaPDF	Tervetuloa PdfCraftiin
+	Welcome to OfficinaPDF	Tervetuloa OfficinaPDFiin
 	An open-source PDF workbench — local, private, and scriptable.	Avoimen lähdekoodin PDF-työpöytä – paikallinen, yksityinen ja skriptattava.
 	Join the ArtCraft community	Liity ArtCraft-yhteisöön
 	Get help, share feedback and follow development on Discord.	Hae apua, anna palautetta ja seuraa kehitystä Discordissa.
@@ -167,7 +167,7 @@
 	Use now	Käytä nyt
 	Open file	Avaa tiedosto
 	Recent	Viimeisimmät
-	Files you open in OfficinaPDF appear here. Drop a PDF anywhere to open it.	PdfCraftissa avatut tiedostot näkyvät tässä. Avaa PDF pudottamalla se mihin tahansa.
+	Files you open in OfficinaPDF appear here. Drop a PDF anywhere to open it.	OfficinaPDFissa avatut tiedostot näkyvät tässä. Avaa PDF pudottamalla se mihin tahansa.
 	Privacy	Tietosuoja
 	OfficinaPDF works offline. No telemetry, no account, and no cloud processing unless you add a provider.	OfficinaPDF toimii ilman verkkoyhteyttä. Ei telemetriaa, ei tiliä eikä pilvikäsittelyä, ellei palveluntarjoajaa lisätä.
 	Scripts run in a sandbox without file or network access. With JavaScript off, Acrobat's standard format, validate and calculate functions still work.	Skriptit suoritetaan eristetyssä ympäristössä ilman tiedosto- tai verkkoyhteyttä. Kun JavaScript on pois käytöstä, Acrobatin vakiomuotoilu-, tarkistus- ja laskentafunktiot toimivat silti.
@@ -317,11 +317,11 @@
 	Number pages…	Numeroi sivut…
 	Keyboard shortcuts	Pikanäppäimet
 	Join the ArtCraft Discord	Liity ArtCraftin Discordiin
-	OfficinaPDF web page	PdfCraftin verkkosivu
+	OfficinaPDF web page	OfficinaPDFin verkkosivu
 	OfficinaPDF on GitHub	OfficinaPDF GitHubissa
 	ArtCraft website	ArtCraftin verkkosivusto
 	Check for updates…	Tarkista päivitykset…
-	About OfficinaPDF	Tietoja PdfCraftista
+	About OfficinaPDF	Tietoja OfficinaPDFista
 	Export a PDF	Vie PDF
 	Export to	Vie muotoon
 	Microsoft Word (.docx)	Microsoft Word (.docx)
@@ -898,8 +898,8 @@
 	No changes allowed	Muutoksia ei sallita
 	Annotations, form fill-in, and digital signatures	Merkinnät, lomakkeiden täyttö ja digitaaliset allekirjoitukset
 	Form fill-in and digital signatures	Lomakkeiden täyttö ja digitaaliset allekirjoitukset
-	The key is in the macOS Keychain, which may ask to allow OfficinaPDF to use it.	Avain on macOS-avainnipussa, joka voi pyytää lupaa PdfCraftin käytölle.
-	The key is in the Windows certificate store, which may ask to allow OfficinaPDF to use it.	Avain on Windowsin varmennesäilössä, joka voi pyytää lupaa PdfCraftin käytölle.
+	The key is in the macOS Keychain, which may ask to allow OfficinaPDF to use it.	Avain on macOS-avainnipussa, joka voi pyytää lupaa OfficinaPDFin käytölle.
+	The key is in the Windows certificate store, which may ask to allow OfficinaPDF to use it.	Avain on Windowsin varmennesäilössä, joka voi pyytää lupaa OfficinaPDFin käytölle.
 	Digital ID password	Digitaalisen tunnuksen salasana
 	Back	Takaisin
 	Validate all	Tarkista kaikki
@@ -2200,7 +2200,7 @@ calendar date	December	joulukuuta
 	The PDF text fonts can't draw “{c}” ({code}). Choose supported text.	PDF-tekstifontit eivät pysty piirtämään merkkiä ”{c}” ({code}). Valitse tuettua tekstiä.
 	The standard fonts can't draw “{c}” ({code}). Only Western European characters can be added as text for now.	Vakiofontit eivät pysty piirtämään merkkiä ”{c}” ({code}). Toistaiseksi tekstinä voi lisätä vain länsieurooppalaisia merkkejä.
 	This field's font can't draw “{c}” ({code}), so OfficinaPDF shows ? in its place. The value is saved, and other PDF viewers redraw the field from it.	Tämän kentän fontti ei pysty piirtämään merkkiä ”{c}” ({code}), joten OfficinaPDF näyttää sen tilalla merkin ?. Arvo tallennetaan, ja muut PDF-katseluohjelmat piirtävät kentän sen perusteella uudelleen.
-	The fonts OfficinaPDF writes with can't draw “{c}” ({code}), so it shows as ? in every PDF viewer. The text is saved.	PdfCraftin käyttämät fontit eivät pysty piirtämään merkkiä ”{c}” ({code}), joten se näkyy merkkinä ? kaikissa PDF-katseluohjelmissa. Teksti tallennetaan.
+	The fonts OfficinaPDF writes with can't draw “{c}” ({code}), so it shows as ? in every PDF viewer. The text is saved.	OfficinaPDFin käyttämät fontit eivät pysty piirtämään merkkiä ”{c}” ({code}), joten se näkyy merkkinä ? kaikissa PDF-katseluohjelmissa. Teksti tallennetaan.
 	Larger pages	Suuremmat sivut
 	Smaller pages	Pienemmät sivut
 	Reset page size	Palauta sivukoko

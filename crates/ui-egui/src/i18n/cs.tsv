@@ -294,7 +294,7 @@ key	Space	Mezerník
 	Use now	Použít
 	Open file	Otevřít soubor
 	Recent	Nedávné
-	Files you open in OfficinaPDF appear here. Drop a PDF anywhere to open it.	Zde se zobrazí soubory, které otevřete v PdfCraftu. Soubor PDF otevřete přetažením kamkoli do okna.
+	Files you open in OfficinaPDF appear here. Drop a PDF anywhere to open it.	Zde se zobrazí soubory, které otevřete v OfficinaPDFu. Soubor PDF otevřete přetažením kamkoli do okna.
 	Privacy	Soukromí
 	OfficinaPDF works offline. No telemetry, no account, and no cloud processing unless you add a provider.	OfficinaPDF funguje offline. Žádná telemetrie, žádný účet a žádné zpracování v cloudu, pokud nepřidáte poskytovatele.
 	Scripts run in a sandbox without file or network access. With JavaScript off, Acrobat's standard format, validate and calculate functions still work.	Skripty běží v izolovaném prostředí bez přístupu k souborům a síti. S vypnutým JavaScriptem dál fungují standardní funkce Acrobatu pro formátování, ověření a výpočty.
@@ -1030,8 +1030,8 @@ key	Space	Mezerník
 	No changes allowed	Nejsou povoleny žádné změny
 	Annotations, form fill-in, and digital signatures	Anotace, vyplňování formulářů a digitální podpisy
 	Form fill-in and digital signatures	Vyplňování formulářů a digitální podpisy
-	The key is in the macOS Keychain, which may ask to allow OfficinaPDF to use it.	Klíč je v Klíčence systému macOS, která se může zeptat, zda PdfCraftu povolit jeho použití.
-	The key is in the Windows certificate store, which may ask to allow OfficinaPDF to use it.	Klíč je v úložišti certifikátů Windows, které se může zeptat, zda PdfCraftu povolit jeho použití.
+	The key is in the macOS Keychain, which may ask to allow OfficinaPDF to use it.	Klíč je v Klíčence systému macOS, která se může zeptat, zda OfficinaPDFu povolit jeho použití.
+	The key is in the Windows certificate store, which may ask to allow OfficinaPDF to use it.	Klíč je v úložišti certifikátů Windows, které se může zeptat, zda OfficinaPDFu povolit jeho použití.
 	Digital ID password	Heslo digitálního ID
 	Back	Zpět
 	Validate all	Ověřit vše
@@ -2885,3 +2885,4 @@ certificate	Version	Verze
 # Comments panel: each reply's own "…" menu (AI-assisted, not separately native-reviewed)
 	Options for this reply	Možnosti této odpovědi
 	Export value	Exportní hodnota
+	Show Page Edge Shadows	Zobrazovat stíny okrajů stránek

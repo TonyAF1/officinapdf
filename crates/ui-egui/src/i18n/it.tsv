@@ -1466,7 +1466,7 @@
 	Discard	Scarta
 	Version {v}	Versione {v}
 	A clean-room, open-source PDF application written in Rust. MIT OR Apache-2.0.	Un'applicazione PDF clean-room e open source scritta in Rust. MIT OR Apache-2.0.
-	Based on PdfCraft by the PdfCraft contributors (github.com/storytold/pdfcraft).	Basato su PdfCraft, degli autori di PdfCraft (github.com/storytold/pdfcraft).
+	Based on OfficinaPDF by the OfficinaPDF contributors (github.com/storytold/pdfcraft).	Basato su OfficinaPDF, degli autori di OfficinaPDF (github.com/storytold/pdfcraft).
 	Part of	Parte di
 	Summarize Options	Opzioni di riepilogo
 	Choose a layout:	Scegli un layout:
@@ -2811,3 +2811,4 @@ certificate	SHA-256 digest	Impronta SHA-256
 # Comments panel: each reply's own "…" menu (AI-assisted, not separately native-reviewed)
 	Options for this reply	Opzioni per questa risposta
 	Export value	Valore di esportazione
+	Show Page Edge Shadows	Mostra le ombre ai bordi delle pagine
