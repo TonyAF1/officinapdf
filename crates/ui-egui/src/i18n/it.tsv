@@ -1466,7 +1466,7 @@
 	Discard	Scarta
 	Version {v}	Versione {v}
 	A clean-room, open-source PDF application written in Rust. MIT OR Apache-2.0.	Un'applicazione PDF clean-room e open source scritta in Rust. MIT OR Apache-2.0.
-	Based on OfficinaPDF by the OfficinaPDF contributors (github.com/storytold/pdfcraft).	Basato su OfficinaPDF, degli autori di OfficinaPDF (github.com/storytold/pdfcraft).
+	Based on PdfCraft by the PdfCraft contributors (github.com/storytold/pdfcraft).	Basato su PdfCraft, degli autori di PdfCraft (github.com/storytold/pdfcraft).
 	Part of	Parte di
 	Summarize Options	Opzioni di riepilogo
 	Choose a layout:	Scegli un layout:
@@ -2812,3 +2812,88 @@ certificate	SHA-256 digest	Impronta SHA-256
 	Options for this reply	Opzioni per questa risposta
 	Export value	Valore di esportazione
 	Show Page Edge Shadows	Mostra le ombre ai bordi delle pagine
+
+# OfficinaPDF 0.2: labels Italian lacked (2026-10-31)
+	 on page {label}	 a pagina {label}
+	1 line	1 riga
+	Add the PDFs to combine	Aggiungi i PDF da combinare
+	Added the first {n} PDFs in {folder}	Aggiunti i primi {n} PDF in {folder}
+	Always	Sempre
+	Automatically	Automaticamente
+	Choose a file…	Scegli un file…
+	Choose a folder…	Scegli una cartella…
+	Choose…	Scegli…
+	Comment and review	Commenta e rivedi
+	Copied to clipboard	Copiato negli appunti
+	Copy to clipboard	Copia negli appunti
+	Create folder	Crea cartella
+	Custom scale	Scala personalizzata
+	Disabled	Disattivato
+	Document properties (⌘D)	Proprietà documento (⌘D)
+	Duplicate	Duplica
+	Enabled	Attivato
+	Every PDF in the folder	Tutti i PDF nella cartella
+	Every PDF in the folder and the folders inside it	Tutti i PDF nella cartella e nelle sue sottocartelle
+	Every line set in the style chosen for a level becomes a bookmark of that level, under a new first bookmark.	Ogni riga scritta nello stile scelto per un livello diventa un segnalibro di quel livello, sotto un nuovo segnalibro iniziale.
+	Folder	Cartella
+	Help…	Guida…
+	Import	Importa
+	Information	Informazioni
+	Level {n}	Livello {n}
+	Loading…	Caricamento…
+	Mouse wheel scroll speed	Velocità di scorrimento della rotellina
+	Move	Sposta
+	Never	Mai
+	New bookmark (⌘B)	Nuovo segnalibro (⌘B)
+	New bookmarks from text styles	Nuovi segnalibri dagli stili del testo
+	New bookmarks from text styles…	Nuovi segnalibri dagli stili del testo…
+	Next (⌘G)	Successivo (⌘G)
+	No PDFs found in {folder}	Nessun PDF trovato in {folder}
+	No results	Nessun risultato
+	Only the document's owner can change its security (open it with the permissions password)	Solo il proprietario del documento può modificarne la sicurezza (aprilo con la password delle autorizzazioni)
+	Open a PDF (⌘O)	Apri un PDF (⌘O)
+	Open folder	Apri cartella
+	Organize	Organizza
+	Page Properties	Proprietà pagina
+	Page properties…	Proprietà pagina…
+	Page {n}	Pagina {n}
+	Page {n} of {total}	Pagina {n} di {total}
+	Paste	Incolla
+	Previous	Precedente
+	Previous (⇧⌘G)	Precedente (⇧⌘G)
+	Print (⌘P)	Stampa (⌘P)
+	Refresh	Aggiorna
+	Remove {standard} identification	Rimuovi l'identificazione {standard}
+	Reset side panels	Ripristina i pannelli laterali
+	Save file	Salva file
+	Search results	Risultati della ricerca
+	Select all	Seleziona tutto
+	Show or hide the Tools panel	Mostra o nascondi il pannello Strumenti
+	Show or hide the side panel	Mostra o nascondi il pannello laterale
+	Success	Operazione riuscita
+	Tab Order	Ordine di tabulazione
+	Text recognition isn't installed: its models are missing (run `cargo xtask models`, or set PDFCRAFT_MODELS).	Il riconoscimento del testo non è installato: mancano i suoi modelli (esegui `cargo xtask models`, oppure imposta PDFCRAFT_MODELS).
+	The certificate of {} has critical extensions OfficinaPDF does not recognize, so it is not used to vouch for {}.	Il certificato di {} ha estensioni critiche che OfficinaPDF non riconosce, quindi non viene usato per garantire {}.
+	The signature's signed attributes have no content type, which CMS requires; it was read anyway.	Gli attributi firmati della firma non hanno un tipo di contenuto, richiesto da CMS; la firma è stata letta comunque.
+	The signature's signed attributes have no message digest, so the signature does not cover the document.	Gli attributi firmati della firma non hanno un'impronta del messaggio, quindi la firma non copre il documento.
+	The signature's signed attributes name a content type other than data, so it is not a signature of the document.	Gli attributi firmati della firma indicano un tipo di contenuto diverso da data, quindi non è una firma del documento.
+	The timestamp authority's certificate is not issued for time stamping.	Il certificato dell'autorità di marca temporale non è rilasciato per la marcatura temporale.
+	Theme	Tema
+	This document has no text to make bookmarks from.	Questo documento non contiene testo da cui creare segnalibri.
+	This file changed on disk. Reload it to see the new version; your unsaved changes will be lost.	Questo file è cambiato sul disco. Ricaricalo per vedere la nuova versione; le modifiche non salvate andranno perse.
+	This signature uses an RSA key shorter than 2048 bits, which is no longer considered strong enough for signatures. It still validates, but it should not be relied on.	Questa firma usa una chiave RSA più corta di 2048 bit, che non è più considerata abbastanza sicura per le firme. Risulta ancora valida, ma non è affidabile.
+	Unspecified	Non specificato
+	Use Column Order	Usa l'ordine delle colonne
+	Use Document Structure	Usa la struttura del documento
+	Use Row Order	Usa l'ordine delle righe
+	Warning	Avviso
+	Window	Finestra
+	Zoom in (⌘+)	Ingrandisci (⌘+)
+	Zoom out (⌘−)	Riduci (⌘−)
+	bold	grassetto
+	italic	corsivo
+	{font}, {size} pt	{font}, {size} pt
+	{n} lines	{n} righe
+@plural	{n} comment|{n} comments	{n} commento|{n} commenti
+@plural	{n} file|{n} files	{n} file|{n} file
+@plural	{n} result|{n} results	{n} risultato|{n} risultati
