@@ -2045,7 +2045,7 @@ fn rendered_text_becomes_jbig2_symbols() {
 }
 
 /// A whole 300 dpi letter page of rendered text, more marks than one JBIG2 text region of the
-/// decoder PdfCraft renders with takes, still looks the same as JBIG2 symbols.
+/// decoder OfficinaPDF renders with takes, still looks the same as JBIG2 symbols.
 #[test]
 fn a_dense_page_of_rendered_text_looks_the_same_as_jbig2_symbols() {
     let mut doc = Document::new_empty();

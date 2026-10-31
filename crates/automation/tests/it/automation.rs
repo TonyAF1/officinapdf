@@ -70,7 +70,7 @@ fn saving_a_pdf_keeps_the_destinations_extended_attributes() {
     use rustix::fs::{XattrFlags, getxattr, setxattr};
     let dir = workdir("save-xattrs");
     let target = dir.join("a.pdf");
-    let tags = b"<plist version=\"1.0\"><array><string>PdfCraft\n6</string></array></plist>";
+    let tags = b"<plist version=\"1.0\"><array><string>OfficinaPDF\n6</string></array></plist>";
     let binary = b"\0\xffpdfcraft\0";
     let attributes: &[(&str, &[u8])] = &[("com.apple.metadata:_kMDItemUserTags", tags), ("com.pdfcraft.test", binary)];
     for (name, value) in attributes {
@@ -3323,7 +3323,7 @@ fn styled_cyrillic_fallback_is_batched_through_tools_and_reopen() {
     assert!(page_text(&mut a, reopened)[0].contains("шалом"));
 }
 
-/// #2593: a paragraph whose own font cannot show a character is written from PdfCraft's fallback
+/// #2593: a paragraph whose own font cannot show a character is written from OfficinaPDF's fallback
 /// faces. The Cyrillic the craft-fonts faces lack (Uzbek қ ғ ҳ, Kazakh ә ө ү ұ һ) comes from the
 /// bundled Inter face, so the edit is not refused even without `CRAFT_FONTS_DIR`, and the words
 /// survive a save and a reopen. (`crates/edit/src/tests.rs::uzbek_and_kazakh_cyrillic_use_the_bundled_latin_face`
@@ -5571,7 +5571,7 @@ fn links_through_tools() {
 }
 
 /// #4168: a Launch action whose file is a PDF (here with Windows `\` separators, relative to the
-/// source as a remote link is) opens that PDF in PdfCraft through link_open, within the root; one
+/// source as a remote link is) opens that PDF in OfficinaPDF through link_open, within the root; one
 /// naming a program is listed but never followed.
 #[test]
 fn a_launch_link_to_a_pdf_opens_it_like_a_remote_link() {
@@ -6000,7 +6000,7 @@ fn comment_checkmarks_locks_hiding_and_summaries_through_tools() {
 /// value, a button caption, a text box and Fill & Sign text are kept as typed (as Acrobat keeps
 /// them) and the result's `warnings` names the character; a form also asks other viewers to
 /// redraw it. Where the `?` would be permanent the tool refuses: a typed signature, a redaction's
-/// overlay text, a new document from text, and flattening what PdfCraft drew with `?`. A comment
+/// overlay text, a new document from text, and flattening what OfficinaPDF drew with `?`. A comment
 /// summary that quotes such text writes it as [U+XXXX].
 #[test]
 fn text_the_standard_fonts_cannot_draw_is_never_silent_through_tools() {

@@ -1,12 +1,12 @@
 //! `page_render` reports the renderer's warnings next to the PNG, so a headless caller can tell
-//! that a picture is incomplete or approximate, as `pdfcraft-cli render` can (#4340).
+//! that a picture is incomplete or approximate, as `officinapdf-cli render` can (#4340).
 
 use std::path::PathBuf;
 
 use pdfcraft_automation::{Automation, Content};
 use serde_json::{Value, json};
 
-/// The warning a colour that falls back gives, worded as `pdfcraft-cli render` prints it.
+/// The warning a colour that falls back gives, worded as `officinapdf-cli render` prints it.
 const FALLBACK: &str = "a colour that could not be computed was painted in a fallback colour";
 
 /// A one-page 200 × 200 pt PDF that draws `content`, with the colour space `CS1` defined as

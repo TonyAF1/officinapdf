@@ -1,4 +1,4 @@
-//! Where PdfCraft and the ArtCraft community live on the web (upstream). This private fork shows
+//! Where OfficinaPDF and the ArtCraft community live on the web (upstream). This private fork shows
 //! none of them in the app or the CLI; the constants stay so upstream code still builds.
 
 use icu_properties::props::Script;
@@ -29,7 +29,7 @@ pub fn for_command(id: &str) -> Option<&'static Link> {
     LINKS.iter().find(|l| l.command == id)
 }
 
-/// The kinds of address a document may ask PdfCraft to open: web pages and email. Anything
+/// The kinds of address a document may ask OfficinaPDF to open: web pages and email. Anything
 /// else (`file:`, `javascript:`, `data:`, `smb:`, app handlers such as `ms-settings:`) is refused,
 /// because the operating system would hand it to whichever program claims it (#90, #91).
 pub const DOCUMENT_SCHEMES: &[&str] = &["https", "http", "mailto"];
@@ -83,8 +83,8 @@ fn hides_text(c: char) -> bool {
 }
 
 /// Check an address that came from a document (a link, a button's URI action or a script's
-/// `app.launchURL`) before PdfCraft offers to open it. Returns the address trimmed of
-/// surrounding whitespace. PdfCraft's own links (Help, About, updates) don't come through here.
+/// `app.launchURL`) before OfficinaPDF offers to open it. Returns the address trimmed of
+/// surrounding whitespace. OfficinaPDF's own links (Help, About, updates) don't come through here.
 pub fn document_url(raw: &str) -> Result<String, BlockedLink> {
     let url = raw.trim();
     if url.is_empty() {
@@ -252,7 +252,7 @@ const MAIL_DECODE_LAYERS: usize = 8;
 /// argument). The check is repeated after each layer of percent-decoding (KMail decodes names, so
 /// `%61ttach` is `attach`). A word without `=` (`Please attach the invoice`) is fine.
 ///
-/// The address is refused, not stripped of the parameter: PdfCraft never rewrites what a document
+/// The address is refused, not stripped of the parameter: OfficinaPDF never rewrites what a document
 /// asks to open, and a stripped address could still be read differently by some email app.
 fn check_mail_parameters(rest: &str) -> Result<(), BlockedLink> {
     let mut text = rest.to_string();
