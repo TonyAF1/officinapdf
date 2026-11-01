@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Fragment>
+    <UI Id="OfficinaInstallerUI">
+      <TextStyle Id="InstallerNormal" FaceName="Segoe UI" Size="9" />
+      <TextStyle Id="InstallerTitle" FaceName="Segoe UI" Size="12" Bold="yes" />
+      <Property Id="DefaultUIFont" Value="InstallerNormal" />
+
+      <Dialog Id="InstallWelcome" Width="370" Height="180" Title="Installazione di [ProductName]">
+        <Control Id="Title" Type="Text" X="20" Y="20" Width="330" Height="25" Text="{\InstallerTitle}Installa [ProductName]" />
+        <Control Id="Description" Type="Text" X="20" Y="55" Width="330" Height="40" Text="Verrà installato [ProductName] per tutti gli utenti e aggiunto al menu Start. Fai clic su Installa per continuare." HideCondition="ALLUSERS &lt;&gt; 1" ShowCondition="ALLUSERS = 1" />
+        <Control Id="DescriptionUser" Type="Text" X="20" Y="55" Width="330" Height="40" Text="Verrà installato [ProductName] solo per il tuo account e aggiunto al menu Start. Fai clic su Installa per continuare." HideCondition="ALLUSERS = 1" ShowCondition="ALLUSERS &lt;&gt; 1" />
+        <Control Id="DesktopShortcut" Type="CheckBox" X="20" Y="105" Width="330" Height="17" Property="INSTALLDESKTOPSHORTCUT" CheckBoxValue="1" Text="Crea un collegamento sul &amp;desktop" />
+        <Control Id="PdfContextMenu" Type="CheckBox" X="20" Y="123" Width="330" Height="17" Property="INSTALLPDFCONTEXTMENU" CheckBoxValue="1" Text="Aggiungi &quot;&amp;Modifica con OfficinaPDF&quot; al menu del tasto destro dei file PDF" />
+        <Control Id="Install" Type="PushButton" X="195" Y="145" Width="75" Height="23" Default="yes" DefaultCondition="ALLUSERS = 1" ElevationShield="yes" HideCondition="ALLUSERS &lt;&gt; 1" ShowCondition="ALLUSERS = 1" Text="&amp;Installa">
+          <Publish Event="EndDialog" Value="Return" />
+        </Control>
+        <Control Id="InstallUser" Type="PushButton" DefaultCondition="ALLUSERS &lt;&gt; 1" HideCondition="ALLUSERS = 1" ShowCondition="ALLUSERS &lt;&gt; 1" X="195" Y="145" Width="75" Height="23" Text="&amp;Installa">
+          <Publish Event="EndDialog" Value="Return" />
+        </Control>
+        <Control Id="Cancel" Type="PushButton" X="280" Y="145" Width="70" Height="23" Cancel="yes" Text="Annulla">
+          <Publish Event="EndDialog" Value="Exit" />
+        </Control>
+      </Dialog>
+
+      <Dialog Id="InstallMaintenance" Width="370" Height="180" Title="Installazione di [ProductName]">
+        <Control Id="Title" Type="Text" X="20" Y="20" Width="330" Height="25" Text="{\InstallerTitle}Gestisci [ProductName]" />
+        <Control Id="Description" Type="Text" X="20" Y="55" Width="330" Height="70" Text="[ProductName] è già installato. Scegli Ripara per ripristinare file e collegamenti mancanti, oppure Rimuovi per disinstallarlo." />
+        <Control Id="Repair" Type="PushButton" X="110" Y="145" Width="75" Height="23" Default="yes" DefaultCondition="ALLUSERS = 1" ElevationShield="yes" HideCondition="ALLUSERS &lt;&gt; 1" ShowCondition="ALLUSERS = 1" Text="&amp;Ripara">
+          <Publish Property="REINSTALL" Value="ALL" Order="1" />
+          <Publish Property="REINSTALLMODE" Value="amus" Order="2" />
+          <Publish Event="EndDialog" Value="Return" Order="3" />
+        </Control>
+        <Control Id="RepairUser" Type="PushButton" DefaultCondition="ALLUSERS &lt;&gt; 1" HideCondition="ALLUSERS = 1" ShowCondition="ALLUSERS &lt;&gt; 1" X="110" Y="145" Width="75" Height="23" Text="&amp;Ripara">
+          <Publish Property="REINSTALL" Value="ALL" Order="1" />
+          <Publish Property="REINSTALLMODE" Value="amus" Order="2" />
+          <Publish Event="EndDialog" Value="Return" Order="3" />
+        </Control>
+        <Control Id="Remove" Type="PushButton" X="195" Y="145" Width="75" Height="23" ElevationShield="yes" HideCondition="ALLUSERS &lt;&gt; 1" ShowCondition="ALLUSERS = 1" Text="Ri&amp;muovi">
+          <Publish Property="REMOVE" Value="ALL" Order="1" />
+          <Publish Event="EndDialog" Value="Return" Order="2" />
+        </Control>
+        <Control Id="RemoveUser" Type="PushButton" HideCondition="ALLUSERS = 1" ShowCondition="ALLUSERS &lt;&gt; 1" X="195" Y="145" Width="75" Height="23" Text="Ri&amp;muovi">
+          <Publish Property="REMOVE" Value="ALL" Order="1" />
+          <Publish Event="EndDialog" Value="Return" Order="2" />
+        </Control>
+        <Control Id="Cancel" Type="PushButton" X="280" Y="145" Width="70" Height="23" Cancel="yes" Text="Annulla">
+          <Publish Event="EndDialog" Value="Exit" />
+        </Control>
+      </Dialog>
+
+      <Dialog Id="InstallProgress" Width="370" Height="180" Title="Installazione di [ProductName]" Modeless="yes">
+        <Control Id="Title" Type="Text" X="20" Y="20" Width="330" Height="25" Text="{\InstallerTitle}Installazione di [ProductName] in corso" />
+        <!-- No ActionText table is authored: subscribing would blank this message (#305). -->
+        <Control Id="Status" Type="Text" X="20" Y="60" Width="330" Height="40" Text="Attendi il completamento dell'installazione." />
+        <Control Id="Progress" Type="ProgressBar" X="20" Y="110" Width="330" Height="15" ProgressBlocks="yes">
+          <Subscribe Event="SetProgress" Attribute="Progress" />
+        </Control>
+        <Control Id="Cancel" Type="PushButton" X="280" Y="145" Width="70" Height="23" Cancel="yes" Text="Annulla">
+          <Publish Event="SpawnDialog" Value="ConfirmCancel" />
+        </Control>
+      </Dialog>
+
+      <Dialog Id="ConfirmCancel" Width="300" Height="110" Title="Annulla installazione">
+        <Control Id="Description" Type="Text" X="20" Y="20" Width="260" Height="35" Text="Annullare l'installazione di [ProductName]?" />
+        <Control Id="Yes" Type="PushButton" X="130" Y="70" Width="70" Height="23" Text="&amp;Sì">
+          <Publish Event="EndDialog" Value="Exit" />
+        </Control>
+        <Control Id="No" Type="PushButton" X="210" Y="70" Width="70" Height="23" Default="yes" Cancel="yes" Text="&amp;No">
+          <Publish Event="EndDialog" Value="Return" />
+        </Control>
+      </Dialog>
+
+      <Dialog Id="InstallComplete" Width="370" Height="180" Title="Installazione di [ProductName]">
+        <Control Id="Title" Type="Text" X="20" Y="20" Width="330" Height="25" Text="{\InstallerTitle}Installazione completata" />
+        <Control Id="Description" Type="Text" X="20" Y="55" Width="330" Height="70" Text="L'installazione di [ProductName] è stata completata. Fai clic su Fine per chiudere questa finestra." />
+        <Control Id="Finish" Type="PushButton" X="280" Y="145" Width="70" Height="23" Default="yes" Cancel="yes" Text="&amp;Fine">
+          <Publish Event="EndDialog" Value="Return" />
+        </Control>
+      </Dialog>
+
+      <Dialog Id="InstallFailed" Width="370" Height="180" Title="Installazione di [ProductName]">
+        <Control Id="Title" Type="Text" X="20" Y="20" Width="330" Height="25" Text="{\InstallerTitle}Installazione non riuscita" />
+        <Control Id="Description" Type="Text" X="20" Y="55" Width="330" Height="70" Text="Non è stato possibile completare l'installazione di [ProductName]. Risolvi l'errore segnalato e riavvia l'installazione." />
+        <Control Id="Finish" Type="PushButton" X="280" Y="145" Width="70" Height="23" Default="yes" Cancel="yes" Text="&amp;Fine">
+          <Publish Event="EndDialog" Value="Return" />
+        </Control>
+      </Dialog>
+
+      <Dialog Id="InstallCancelled" Width="370" Height="180" Title="Installazione di [ProductName]">
+        <Control Id="Title" Type="Text" X="20" Y="20" Width="330" Height="25" Text="{\InstallerTitle}Installazione annullata" />
+        <Control Id="Description" Type="Text" X="20" Y="55" Width="330" Height="70" Text="L'installazione di [ProductName] è stata annullata. Riavviala quando vuoi." />
+        <Control Id="Finish" Type="PushButton" X="280" Y="145" Width="70" Height="23" Default="yes" Cancel="yes" Text="&amp;Fine">
+          <Publish Event="EndDialog" Value="Return" />
+        </Control>
+      </Dialog>
+
+      <!-- Shown by Windows Installer (Restart Manager) when an upgrade or repair must replace files
+           that a running OfficinaPDF holds open. OK closes those programs (MSIRMSHUTDOWN=2) and
+           continues; Cancel ends setup. -->
+      <Dialog Id="MsiRMFilesInUse" Width="370" Height="200" Title="Installazione di [ProductName]" KeepModeless="yes">
+        <Control Id="Title" Type="Text" X="20" Y="15" Width="330" Height="25" Text="{\InstallerTitle}File in uso" />
+        <Control Id="Description" Type="Text" X="20" Y="45" Width="330" Height="30" Text="Questi programmi usano file che l'installazione deve aggiornare. Fai clic su OK per chiuderli e continuare, oppure su Annulla per fermare l'installazione." />
+        <Control Id="List" Type="ListBox" X="20" Y="80" Width="330" Height="55" Property="FileInUseProcess" Sunken="yes" TabSkip="yes" />
+        <Control Id="OK" Type="PushButton" X="195" Y="165" Width="75" Height="23" Default="yes" Text="OK">
+          <Publish Property="MSIRMSHUTDOWN" Value="2" Order="1" />
+          <Publish Event="EndDialog" Value="Return" Order="2" />
+        </Control>
+        <Control Id="Cancel" Type="PushButton" X="280" Y="165" Width="70" Height="23" Cancel="yes" Text="Annulla">
+          <Publish Event="EndDialog" Value="Exit" />
+        </Control>
+      </Dialog>
+
+      <InstallUISequence>
+        <Show Dialog="InstallWelcome" Before="InstallMaintenance" Condition="UILevel = 5 AND NOT Installed" />
+        <Show Dialog="InstallMaintenance" Before="InstallProgress" Condition="UILevel = 5 AND Installed AND NOT REMOVE AND NOT REINSTALL" />
+        <Show Dialog="InstallProgress" Before="ExecuteAction" Condition="UILevel = 5" />
+        <Show Dialog="InstallComplete" OnExit="success" Condition="UILevel = 5" />
+        <Show Dialog="InstallFailed" OnExit="error" Condition="UILevel = 5" />
+        <Show Dialog="InstallCancelled" OnExit="cancel" Condition="UILevel = 5" />
+      </InstallUISequence>
+    </UI>
+  </Fragment>
+</Wix>

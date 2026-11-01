@@ -45,6 +45,19 @@ cargo build --release -p pdfcraft -p pdfcraft-cli  # versione ottimizzata in tar
 I pacchetti Rust interni mantengono il nome `pdfcraft-*`, così è più semplice recuperare le
 correzioni da PdfCraft.
 
+## Installer
+
+```powershell
+pwsh packaging/windows/package-officinapdf.ps1 -OutDir "..\Versioni\OfficinaPDF v0.x"
+```
+
+Crea `OfficinaPDF-<versione>-x64.msi`, un installer in italiano: menu Start, collegamento sul
+desktop, "Apri con" e App predefinite di Windows, "Modifica con OfficinaPDF" nel menu del tasto
+destro. Serve WiX 5 (`dotnet tool install --global wix --version 5.0.2`, oppure `-Wix` con il
+percorso di `wix.exe`). I file `officinapdf*.wxs`, `officinapdf-policy.wxi` e
+`package-officinapdf.ps1` sono copie di quelli di PdfCraft con nomi, codici e registro propri:
+così OfficinaPDF si installa accanto a un PdfCraft ufficiale e i merge restano senza conflitti.
+
 ## Versioni
 
 Ogni versione compilata va in una cartella propria in `..\Versioni\`.
