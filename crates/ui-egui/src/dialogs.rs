@@ -17,6 +17,7 @@ pub(super) mod palette;
 mod prompts;
 pub(super) mod protect;
 pub(super) mod standards_ui;
+mod whats_new;
 pub(super) mod word_count_ui;
 
 pub(crate) use prompts::{PromptButton, save_prompt_key};
@@ -127,7 +128,7 @@ fn dialogs(app: &mut PdfCraftApp, ctx: &egui::Context) {
             Dialog::Properties(_) => 640.0,
             Dialog::Print => 820.0,
             Dialog::FieldProps | Dialog::BulkFieldProps => 600.0,
-            Dialog::About => 780.0,
+            Dialog::About | Dialog::WhatsNew => 780.0,
             _ => 520.0,
         });
         if dialog_body(ui, app, dialog, &mut req) {
@@ -446,6 +447,7 @@ fn dialog_body(ui: &mut egui::Ui, app: &mut PdfCraftApp, dialog: Dialog, req: &m
                 return false;
             }
         }
+        Dialog::WhatsNew => whats_new::ui(ui),
     }
     true
 }

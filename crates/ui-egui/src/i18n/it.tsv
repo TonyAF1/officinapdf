@@ -163,7 +163,7 @@
 	Current page — type a page number or label (such as iv) and press Enter	Pagina corrente: digita un numero o un'etichetta di pagina (ad esempio iv) e premi Invio
 	Zoom — type a percentage and press Enter	Zoom: digita una percentuale e premi Invio
 	Welcome to OfficinaPDF	Benvenuto in OfficinaPDF
-	An open-source PDF workbench — local, private, and scriptable.	Un banco di lavoro PDF open source: locale, riservato e programmabile.
+	Your PDF workshop: every tool within reach.	La tua officina per i PDF: ogni attrezzo a portata di mano.
 	Join the ArtCraft community	Unisciti alla community di ArtCraft
 	Get help, share feedback and follow development on Discord.	Chiedi aiuto, condividi commenti e segui lo sviluppo su Discord.
 	Recommended tools	Strumenti consigliati
@@ -2897,3 +2897,6 @@ certificate	SHA-256 digest	Impronta SHA-256
 @plural	{n} comment|{n} comments	{n} commento|{n} commenti
 @plural	{n} file|{n} files	{n} file|{n} file
 @plural	{n} result|{n} results	{n} risultato|{n} risultati
+# OfficinaPDF 0.4
+	What's new	Novità
+	An open-source PDF workbench — local, private, and scriptable.	Un banco di lavoro PDF open source: locale, riservato e programmabile.

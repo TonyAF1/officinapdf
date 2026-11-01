@@ -25,10 +25,16 @@ italiane (à, è, ì, ò, ù) vengono perse.
 
 ## Aggiornamenti da PdfCraft
 
-```sh
-git fetch upstream main
-git merge upstream/main   # poi riapplicare il nome OfficinaPDF ai file cambiati e rifare i test
+```powershell
+pwsh .\aggiorna-da-pdfcraft.ps1 -SoloControllo     # ci sono novità?
+pwsh .\aggiorna-da-pdfcraft.ps1                    # le porta in OfficinaPDF
+pwsh .\aggiorna-da-pdfcraft.ps1 -Versione 0.5.0    # e crea la nuova versione in ..\Versioni
 ```
+
+Lo script unisce le novità in un ramo di prova, riapplica il nome OfficinaPDF (lasciando
+"PdfCraft" nei crediti e nella licenza), esegue clippy, test e il controllo delle traduzioni
+italiane, e solo se tutto passa porta il risultato su `main`. Con conflitti, test falliti o
+traduzioni mancanti si ferma e lascia `main` com'era.
 
 Il commit iniziale (lo zip) è collegato a PdfCraft `13655d0` con `git replace --graft`; il
 collegamento è locale a questo repository.
@@ -53,7 +59,8 @@ pwsh packaging/windows/package-officinapdf.ps1 -OutDir "..\Versioni\OfficinaPDF 
 
 Crea `OfficinaPDF-<versione>-x64.msi`, un installer in italiano: menu Start, collegamento sul
 desktop, "Apri con" e App predefinite di Windows, "Modifica con OfficinaPDF" nel menu del tasto
-destro. Serve WiX 5 (`dotnet tool install --global wix --version 5.0.2`, oppure `-Wix` con il
+destro. Crea anche `OfficinaPDF-<versione>-portable.zip`, da usare senza installare (con
+`portable.txt` le impostazioni restano in `OfficinaPDFData` accanto al programma). Serve WiX 5 (`dotnet tool install --global wix --version 5.0.2`, oppure `-Wix` con il
 percorso di `wix.exe`). I file `officinapdf*.wxs`, `officinapdf-policy.wxi` e
 `package-officinapdf.ps1` sono copie di quelli di PdfCraft con nomi, codici e registro propri:
 così OfficinaPDF si installa accanto a un PdfCraft ufficiale e i merge restano senza conflitti.

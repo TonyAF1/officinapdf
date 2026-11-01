@@ -240,6 +240,7 @@ impl PdfCraftApp {
             "create.clipboard" => self.create_from_clipboard(),
             "optimize.reduce" => self.reduce_file_size(),
             "help.shortcuts" => self.dialog = Some(Dialog::Shortcuts),
+            "help.whats_new" => self.dialog = Some(Dialog::WhatsNew),
             "help.about" => self.dialog = Some(Dialog::About),
             _ => return None,
         }

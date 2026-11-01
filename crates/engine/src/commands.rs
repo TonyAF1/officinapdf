@@ -396,6 +396,7 @@ pub const COMMANDS: &[CommandSpec] = &[
     c("page.number", "Number pages…", PAGES, None, Assembly, "hash"),
     c("page.properties", "Page properties…", PAGES, None, Modification, "info"),
     c("help.shortcuts", "Keyboard shortcuts", HELP, None, Nothing, "circle-help"),
+    c("help.whats_new", "What's new", HELP, None, Nothing, "sparkles"),
     c("help.about", "About OfficinaPDF", HELP, None, Nothing, "info"),
 ];
 

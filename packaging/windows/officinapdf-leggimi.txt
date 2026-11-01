@@ -1,0 +1,37 @@
+OfficinaPDF {VERSIONE}
+=================
+
+Lettore ed editor PDF per uso privato. Le novità di ogni versione sono in Aiuto > Novità.
+
+  OfficinaPDF-{VERSIONE}-x64.msi        l'installer (doppio clic per installare o aggiornare)
+  OfficinaPDF-{VERSIONE}-portable.zip   la versione portatile, da usare senza installare
+
+Installazione
+  1. Doppio clic sul file .msi. Se OfficinaPDF è già installato, viene aggiornato e le
+     impostazioni restano.
+     L'installer non ha firma digitale: se Windows mostra "PC protetto da Windows",
+     fai clic su "Ulteriori informazioni" e poi su "Esegui comunque".
+  2. Scegli "Solo per me" (non servono permessi di amministratore) oppure
+     "Tutti gli utenti del computer".
+  3. Scegli se creare il collegamento sul desktop e la voce "Modifica con OfficinaPDF"
+     nel menu del tasto destro dei file PDF, poi fai clic su Installa.
+
+Versione portatile
+  Estrai lo zip dove vuoi, anche su una chiavetta USB, e avvia officinapdf.exe.
+  Finché accanto al programma c'è il file portable.txt, impostazioni e file recenti
+  restano nella cartella OfficinaPDFData lì accanto: spostando la cartella porti con te
+  anche le tue preferenze. La versione portatile non compare in "Apri con" e non
+  aggiunge voci al menu del tasto destro.
+
+Usare OfficinaPDF come lettore PDF predefinito
+  Tasto destro su un PDF > Apri con > Scegli un'altra app > OfficinaPDF, con la casella
+  "Usa sempre questa app" selezionata.
+
+Disinstallazione
+  Impostazioni > App > OfficinaPDF > Disinstalla.
+
+OfficinaPDF è basato su PdfCraft (https://github.com/storytold/pdfcraft),
+Copyright (c) the PdfCraft contributors, distribuito con licenza MIT oppure Apache-2.0
+(LICENSE-MIT, LICENSE-APACHE, NOTICE nella versione portatile).
+I modelli OCR sono di Robert Knight (progetto ocrs), licenza CC-BY-SA-4.0
+(models\ATTRIBUTION.txt e models\*.LICENCE.txt).

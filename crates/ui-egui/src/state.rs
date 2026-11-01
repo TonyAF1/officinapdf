@@ -105,6 +105,8 @@ pub enum Dialog {
     CreateImages,
     Properties(PropsTab),
     About,
+    /// OfficinaPDF: Help ▸ What's new (`dialogs/whats_new.rs`).
+    WhatsNew,
     Shortcuts,
     Split,
     /// Pages ▸ Number pages… (page labels).

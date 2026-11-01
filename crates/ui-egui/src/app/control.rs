@@ -92,6 +92,7 @@ impl PdfCraftApp {
                     "advanced" => Some(Dialog::Properties(PropsTab::Advanced)),
                     "space-audit" => Some(Dialog::Properties(PropsTab::SpaceAudit)),
                     "shortcuts" => Some(Dialog::Shortcuts),
+                    "whats-new" => Some(Dialog::WhatsNew),
                     "split" => Some(Dialog::Split),
                     "protect" => Some(Dialog::Protect),
                     "page-boxes" => Some(Dialog::PageBoxes),

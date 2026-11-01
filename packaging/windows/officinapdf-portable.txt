@@ -1,0 +1,11 @@
+OfficinaPDF - modalità portatile
+
+Finché questo file si trova accanto a officinapdf.exe, OfficinaPDF salva impostazioni, file
+recenti, registri, salvataggi di recupero e nuovi ID digitali nella cartella OfficinaPDFData
+accanto al programma, e non scrive nulla in %APPDATA% o %LOCALAPPDATA%. Copia l'intera
+cartella per portare OfficinaPDF, con le sue impostazioni, su un altro computer o su una
+chiavetta USB.
+
+Cancella questo file per usare le normali cartelle dell'utente (%APPDATA%\OfficinaPDF e
+%LOCALAPPDATA%\OfficinaPDF). Se la cartella OfficinaPDFData non è scrivibile (per esempio su
+un disco di sola lettura), OfficinaPDF lo segnala e usa le cartelle dell'utente.

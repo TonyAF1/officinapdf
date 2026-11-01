@@ -7,10 +7,13 @@
 //! searchable image (Acrobat's "Searchable Image (Exact)": the image is left untouched).
 //!
 //! The models read the Latin alphabet (English and other languages written without accents).
+//! OfficinaPDF: [`accents::restore`] puts back the Italian accents the models can't read.
 
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable)]
 
 use std::path::{Path, PathBuf};
+
+pub mod accents;
 
 pub use pdfcraft_fonts::helvetica_width;
 
@@ -155,7 +158,7 @@ impl Ocr {
                     .words()
                     .map(|w| {
                         let r = w.bounding_rect();
-                        Word { text: w.to_string(), rect: [r.left() as f32, r.top() as f32, r.right() as f32, r.bottom() as f32] }
+                        Word { text: accents::restore(&w.to_string()), rect: [r.left() as f32, r.top() as f32, r.right() as f32, r.bottom() as f32] }
                     })
                     .filter(|w| !w.text.trim().is_empty())
                     .collect(),

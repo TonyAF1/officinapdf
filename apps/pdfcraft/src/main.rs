@@ -89,7 +89,7 @@ fn print_and_exit(text: &str) -> eframe::Result {
 const LEGACY_STORAGE_KEY: &str = "printcraft";
 
 /// The preferences folder (`app.ron`, docs/development.md). In portable mode
-/// it is `PdfCraftData` beside the executable (#157). XDG desktops use the configuration base;
+/// it is `OfficinaPDFData` beside the executable (#157). XDG desktops use the configuration base;
 /// other platforms retain eframe's OfficinaPDF folder. Logs and recovery stay in the data folder.
 fn settings_dir() -> Option<std::path::PathBuf> {
     let legacy = eframe::storage_dir("OfficinaPDF");

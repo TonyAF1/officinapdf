@@ -5,8 +5,9 @@
 .DESCRIPTION
   The OfficinaPDF counterpart of package.ps1, kept separate so upstream changes to package.ps1
   merge without conflicts. Produces, in -OutDir (default: dist\officinapdf):
-    OfficinaPDF-<version>-x64.msi   installer in Italian: Start menu, desktop shortcut, "Apri con",
-                                    Windows default apps, "Modifica con OfficinaPDF" for PDF files
+    OfficinaPDF-<version>-x64.msi        installer in Italian: Start menu, desktop shortcut, "Apri con",
+                                         Windows default apps, "Modifica con OfficinaPDF" for PDF files
+    OfficinaPDF-<version>-portable.zip   the same program to unzip anywhere, settings kept beside it
 
   The binaries link the C runtime statically (+crt-static), so no Visual C++ redistributable is
   needed. Nothing is signed: Windows SmartScreen may warn the first time the MSI runs.
@@ -91,4 +92,18 @@ Invoke-Native 'wix build' {
     -o $Msi
 }
 Remove-Item -Force -ErrorAction SilentlyContinue ([IO.Path]::ChangeExtension($Msi, '.wixpdb'))
-Get-Item $Msi | Format-Table Name, Length
+
+# ---- portable zip ------------------------------------------------------------------------------
+# portable.txt beside officinapdf.exe switches on portable mode: settings and recovery files go to
+# OfficinaPDFData\ next to the exe (crates/ui-egui/src/platform/portable.rs).
+$Portable = Join-Path $TargetDir "officinapdf-portable\OfficinaPDF-$Version-portable"
+Remove-Item -Recurse -Force (Split-Path $Portable) -ErrorAction SilentlyContinue
+New-Item -ItemType Directory -Force -Path $Portable | Out-Null
+Copy-Item (Join-Path $Stage '*.exe'), (Join-Path $Stage 'LICENSE-*'), (Join-Path $Stage 'NOTICE') $Portable
+Copy-Item -Recurse $Models (Join-Path $Portable 'models')
+Copy-Item (Join-Path $PSScriptRoot 'officinapdf-portable.txt') (Join-Path $Portable 'portable.txt')
+$Zip = Join-Path $OutDir "OfficinaPDF-$Version-portable.zip"
+Remove-Item -Force $Zip -ErrorAction SilentlyContinue
+Compress-Archive -Path $Portable -DestinationPath $Zip
+
+Get-Item $Msi, $Zip | Format-Table Name, Length
