@@ -121,7 +121,7 @@ trap {
 
 if (-not $SoloControllo) {
   New-Item -ItemType Directory -Force $Versions | Out-Null
-  try { Start-Transcript -Path (Join-Path $Versions "aggiornamento-$(Get-Date -Format 'yyyy-MM-dd-HHmm').log") | Out-Null } catch { }
+  try { Start-Transcript -Path (Join-Path $Versions "aggiornamento-$(Get-Date -Format 'yyyy-MM-dd-HHmmss').log") | Out-Null } catch { }
 }
 
 # ---- 1. novità? --------------------------------------------------------------------------------
