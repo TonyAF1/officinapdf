@@ -1,5 +1,5 @@
 //! Where OfficinaPDF and the ArtCraft community live on the web (upstream). This private fork shows
-//! none of them in the app or the CLI; the constants stay so upstream code still builds.
+//! none of them in the app or the CLI, and doesn't have the chat server's address at all.
 
 use icu_properties::props::Script;
 use std::path::{Path, PathBuf};
@@ -7,7 +7,6 @@ use std::path::{Path, PathBuf};
 /// The app's name in ArtCraft URLs (`getartcraft.com/apps/{APP}`, `github.com/storytold/{APP}`).
 pub const APP: &str = "pdfcraft";
 
-pub const DISCORD: &str = "https://discord.gg/artcraft";
 pub const WEBSITE: &str = "https://getartcraft.com";
 pub const APP_PAGE: &str = "https://getartcraft.com/apps/pdfcraft";
 pub const GITHUB: &str = "https://github.com/storytold/pdfcraft";

@@ -99,7 +99,8 @@ if ($New.Count -eq 0) {
   Say 'Nessuna novità: OfficinaPDF ha già tutti gli aggiornamenti di PdfCraft.' Green
   Finish 0
 }
-Write-Host "$($New.Count) modifiche nuove di PdfCraft:"
+$quante = if ($New.Count -eq 1) { 'una modifica' } else { "$($New.Count) modifiche" }
+Write-Host "Novità di PdfCraft: $quante."
 $New | Select-Object -First 15 | ForEach-Object { Write-Host "  $_" }
 if ($New.Count -gt 15) { Write-Host "  … e altre $($New.Count - 15)" }
 if ($SoloControllo) { exit 0 }
@@ -173,6 +174,12 @@ $merge = GitText commit-tree $tree -p main -p upstream/main -m "Merge PdfCraft $
 GitOk merge --quit
 GitOk update-ref "refs/heads/$Branch" $merge
 [void](Convert-OfficinaTree $Root $null)
+# OfficinaPDF shows no link to PdfCraft's Discord: one that PdfCraft added since stops the update.
+$discord = @(git grep -n -I -i -E 'discord\.(gg|com)' -- apps crates)
+if ($discord.Count -gt 0) {
+  $discord | ForEach-Object { Write-Host "  $_" }
+  Park 'PdfCraft ha aggiunto un link a Discord nel programma (righe qui sopra): va tolto a mano'
+}
 
 # ---- 3. nuova versione -------------------------------------------------------------------------
 Say "Imposto la versione $Versione"
@@ -188,7 +195,7 @@ pub const RELEASES: &[Release] = &[
     Release {
         version: "$Versione",
         date: "$data",
-        notes: &["Aggiornamento a PdfCraft $($Upstream): $($New.Count) modifiche tra correzioni e novità."],
+        notes: &["Aggiornamento a PdfCraft $($Upstream): $quante tra correzioni e novità."],
     },
 "@
   $text = $text.Replace("pub const RELEASES: &[Release] = &[`n", ($entry -replace "`r`n", "`n") + "`n")
