@@ -69,6 +69,23 @@ function Run([string] $What, [scriptblock] $Block) {
   & $Block | Out-Host
   return ($LASTEXITCODE -eq 0)
 }
+# PdfCraft's font archive in ..\craft-fonts, at the commit its CI names. $null (and a warning) when
+# that commit can't be found or fetched: the tests then run without it.
+function Get-CraftFonts {
+  $ci = Join-Path $Root '.github\workflows\ci.yml'
+  $rev = if (Test-Path $ci) { [regex]::Match([IO.File]::ReadAllText($ci), 'craft-fonts-ref:\s*([0-9a-f]{40})').Groups[1].Value }
+  if (-not $rev) { Write-Host 'Non trovo la versione di craft-fonts usata da PdfCraft: test senza i suoi font.' -ForegroundColor Yellow; return $null }
+  $clone = Join-Path (Split-Path $Root) 'craft-fonts'
+  if (-not (Test-Path (Join-Path $clone '.git'))) {
+    Say 'Scarico i font per i test (storytold/craft-fonts, circa 50 MB, solo la prima volta)'
+    & git.exe clone --quiet https://github.com/storytold/craft-fonts $clone | Out-Host
+  }
+  & git.exe -C $clone cat-file -e "$rev^{commit}" 2>$null
+  if ($LASTEXITCODE -ne 0) { & git.exe -C $clone fetch --quiet origin | Out-Host }
+  & git.exe -C $clone checkout --quiet --detach $rev 2>$null | Out-Host
+  if ($LASTEXITCODE -ne 0) { Write-Host 'Non riesco a scaricare craft-fonts: test senza i suoi font.' -ForegroundColor Yellow; return $null }
+  return $clone
+}
 # Leaves the trial branch with the work so far and goes back to main.
 function Park([string] $Why) {
   GitOk add -A
@@ -215,13 +232,29 @@ if (-not $Prova) {
   # computer the integrated Intel driver crashes the tests that draw, so they use the other
   # card through Vulkan. A WGPU_* variable set before the script is left as it is.
   $forTests = @{ LC_ALL = 'en_US.UTF-8' }
+  # With the catalogs come the languages, and one test draws them all: it needs the fonts
+  # PdfCraft keeps in storytold/craft-fonts, at the commit its own tests use. For the tests
+  # only: the packages embed none of them, as before.
+  $fonts = Get-CraftFonts
+  if ($fonts -and -not $env:CRAFT_FONTS_DIR) { $forTests.CRAFT_FONTS_DIR = $fonts }
   if (-not $env:WGPU_BACKEND) { $forTests.WGPU_BACKEND = 'vulkan' }
   if (-not $env:WGPU_POWER_PREF) { $forTests.WGPU_POWER_PREF = 'high' }
   $before = @{}
   foreach ($name in $forTests.Keys) { $before[$name] = [Environment]::GetEnvironmentVariable($name); Set-Item "Env:$name" $forTests[$name] }
-  $ok = Run 'Eseguo i test (può volerci più di mezz''ora)' { cargo test --workspace -j 4 }
-  # A few of PdfCraft's tests depend on timing: one more try before giving up.
-  if (-not $ok) { $ok = Run 'Qualche test non è passato: riprovo una volta' { cargo test --workspace -j 4 } }
+  Say 'Eseguo i test (può volerci più di mezz''ora)'
+  & cargo test --workspace -j 4 --no-fail-fast 2>&1 | Tee-Object -Variable testOutput | Out-Host
+  $ok = ($LASTEXITCODE -eq 0)
+  if (-not $ok) {
+    # A few of PdfCraft's tests wait a fixed time for a background job, and miss it while every
+    # other test is running. Each group that failed gets one more try, on its own.
+    $again = @($testOutput | ForEach-Object { [regex]::Match("$_", 'to rerun pass `([^`]+)`').Groups[1].Value } | Where-Object { $_ } | Select-Object -Unique)
+    if ($again.Count -gt 0) {
+      $ok = $true
+      foreach ($group in $again) {
+        if (-not (Run "Riprovo da solo il gruppo di test: $group" { cargo test @($group -split ' ') -j 4 })) { $ok = $false }
+      }
+    }
+  }
   # Put back, so the OfficinaPDF started at the end isn't told to speak English.
   foreach ($name in $forTests.Keys) { if ($null -eq $before[$name]) { Remove-Item "Env:$name" } else { Set-Item "Env:$name" $before[$name] } }
   if (-not $ok) { Park 'alcuni test non sono passati' }
