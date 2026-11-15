@@ -86,6 +86,24 @@ function Get-CraftFonts {
   if ($LASTEXITCODE -ne 0) { Write-Host 'Non riesco a scaricare craft-fonts: test senza i suoi font.' -ForegroundColor Yellow; return $null }
   return $clone
 }
+# The groups of tests that failed in cargo's output, each with the tests it named:
+# @{ Group = '-p crate --test it'; Tests = @('module::test', …) }.
+function Get-FailedTests($Output) {
+  $names = New-Object System.Collections.Generic.List[string]
+  $inList = $false
+  foreach ($item in $Output) {
+    $line = "$item"
+    if ($line -match '^failures:\s*$') { $inList = $true; continue }
+    if ($line -match '^test result:') { $inList = $false; continue }
+    if ($inList -and $line -match '^    ([A-Za-z_][\w:]*)\s*$') { if (-not $names.Contains($Matches[1])) { $names.Add($Matches[1]) }; continue }
+    $group = [regex]::Match($line, 'to rerun pass `([^`]+)`').Groups[1].Value
+    if ($group) {
+      [pscustomobject]@{ Group = $group; Tests = @($names) }
+      $names = New-Object System.Collections.Generic.List[string]
+      $inList = $false
+    }
+  }
+}
 # Leaves the trial branch with the work so far and goes back to main.
 function Park([string] $Why) {
   GitOk add -A
@@ -242,16 +260,30 @@ if (-not $Prova) {
   $before = @{}
   foreach ($name in $forTests.Keys) { $before[$name] = [Environment]::GetEnvironmentVariable($name); Set-Item "Env:$name" $forTests[$name] }
   Say 'Eseguo i test (può volerci più di mezz''ora)'
+  Write-Host 'Durante i test possono comparire da sole finestre di Windows "Apri" o "Salva": sono dei test, si possono ignorare o chiudere.'
   & cargo test --workspace -j 4 --no-fail-fast 2>&1 | Tee-Object -Variable testOutput | Out-Host
   $ok = ($LASTEXITCODE -eq 0)
   if (-not $ok) {
-    # A few of PdfCraft's tests wait a fixed time for a background job, and miss it while every
-    # other test is running. Each group that failed gets one more try, on its own.
-    $again = @($testOutput | ForEach-Object { [regex]::Match("$_", 'to rerun pass `([^`]+)`').Groups[1].Value } | Where-Object { $_ } | Select-Object -Unique)
-    if ($again.Count -gt 0) {
+    # A few of PdfCraft's tests wait a fixed time for a background job, or share state with
+    # their neighbours, and fail only while every other test is running. Each test that failed
+    # gets three more tries on its own; a group that failed without naming a test (it crashed)
+    # gets one more try whole.
+    $failed = @(Get-FailedTests $testOutput)
+    if ($failed.Count -gt 0) {
       $ok = $true
-      foreach ($group in $again) {
-        if (-not (Run "Riprovo da solo il gruppo di test: $group" { cargo test @($group -split ' ') -j 4 })) { $ok = $false }
+      foreach ($group in $failed) {
+        $cargoArgs = @($group.Group -split ' ')
+        if ($group.Tests.Count -eq 0) {
+          if (-not (Run "Riprovo il gruppo di test: $($group.Group)" { cargo test @cargoArgs -j 4 })) { $ok = $false }
+          continue
+        }
+        foreach ($test in $group.Tests) {
+          $passed = $false
+          foreach ($try in 1..3) {
+            if (Run "Riprovo da solo il test $test (tentativo $try di 3)" { cargo test @cargoArgs -j 4 -- --exact $test --test-threads=1 }) { $passed = $true; break }
+          }
+          if (-not $passed) { Write-Host "Il test $test non passa nemmeno da solo." -ForegroundColor Yellow; $ok = $false }
+        }
       }
     }
   }
