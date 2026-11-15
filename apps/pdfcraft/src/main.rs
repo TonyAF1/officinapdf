@@ -484,8 +484,8 @@ fn app_creator<'a>(
             }
             app.motion.source = Some(motion::source());
         }
-        // OfficinaPDF: the check at start asks for news in PdfCraft's source, never for its releases,
-        // which would replace this build (`dialogs/whats_new.rs`).
+        // This fork's check at start asks whether the upstream source has news, never for upstream's
+        // releases, which would replace this build (`dialogs/whats_new.rs`).
         app.set_source_update_check();
         app.printer_source = Some(pdfcraft_ui_egui::system_printers());
         app.two_sided_source = Some(pdfcraft_ui_egui::system_two_sided());

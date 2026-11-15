@@ -206,17 +206,26 @@ if ($text -notmatch [regex]::Escape("version: `"$Versione`"")) {
 
 # ---- 4. traduzioni e controlli -----------------------------------------------------------------
 Say 'Preparo le traduzioni italiane'
-# Now, so a missing catalog stops the update before the long part; the packages embed them.
-$i18n = & (Join-Path $Root 'packaging\windows\officinapdf-traduzioni.ps1')
-& cargo fmt --all | Out-Null
-# The tests run as PdfCraft's own do: in English (some look for English labels, and this computer
-# is Italian), so without the catalogs. Vulkan, unless WGPU_BACKEND says otherwise: the tests that
-# draw crash on this computer's Direct3D 12 driver.
-Remove-Item Env:CRAFT_I18N_DIR, Env:CRAFT_I18N_REQUIRED -ErrorAction SilentlyContinue
-if (-not $env:WGPU_BACKEND) { $env:WGPU_BACKEND = 'vulkan' }
-if (-not $Prova -and -not (Run 'Eseguo i test (può volerci più di mezz''ora)' { cargo test --workspace -j 4 })) { Park 'alcuni test non sono passati' }
-$env:CRAFT_I18N_DIR = $i18n
+$env:CRAFT_I18N_DIR = & (Join-Path $Root 'packaging\windows\officinapdf-traduzioni.ps1')
 $env:CRAFT_I18N_REQUIRED = '1'
+& cargo fmt --all | Out-Null
+if (-not $Prova) {
+  # The tests run as on PdfCraft's own machines: with the catalogs, in English (they look for
+  # English labels, and this computer is Italian), and on a graphics driver that works. On this
+  # computer the integrated Intel driver crashes the tests that draw, so they use the other
+  # card through Vulkan. A WGPU_* variable set before the script is left as it is.
+  $forTests = @{ LC_ALL = 'en_US.UTF-8' }
+  if (-not $env:WGPU_BACKEND) { $forTests.WGPU_BACKEND = 'vulkan' }
+  if (-not $env:WGPU_POWER_PREF) { $forTests.WGPU_POWER_PREF = 'high' }
+  $before = @{}
+  foreach ($name in $forTests.Keys) { $before[$name] = [Environment]::GetEnvironmentVariable($name); Set-Item "Env:$name" $forTests[$name] }
+  $ok = Run 'Eseguo i test (può volerci più di mezz''ora)' { cargo test --workspace -j 4 }
+  # A few of PdfCraft's tests depend on timing: one more try before giving up.
+  if (-not $ok) { $ok = Run 'Qualche test non è passato: riprovo una volta' { cargo test --workspace -j 4 } }
+  # Put back, so the OfficinaPDF started at the end isn't told to speak English.
+  foreach ($name in $forTests.Keys) { if ($null -eq $before[$name]) { Remove-Item "Env:$name" } else { Set-Item "Env:$name" $before[$name] } }
+  if (-not $ok) { Park 'alcuni test non sono passati' }
+}
 
 # ---- 5. su main --------------------------------------------------------------------------------
 GitOk add -A

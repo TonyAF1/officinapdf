@@ -45,7 +45,10 @@ pub(super) enum Status {
 
 struct State {
     status: Status,
-    /// The desktop app asked for a check at start (tests never do, so they never run git).
+    /// The desktop app turned these updates on. Tests never do, so they never run git, and Help ▸
+    /// Check for updates stays the dormant check they drive with a stand-in source.
+    enabled: bool,
+    /// The check at start hasn't run yet.
     at_start: bool,
     /// The check now running was the one at start: an update it finds opens the window.
     from_start: bool,
@@ -53,7 +56,7 @@ struct State {
     offered: bool,
 }
 
-static STATE: Mutex<State> = Mutex::new(State { status: Status::Idle, at_start: false, from_start: false, offered: false });
+static STATE: Mutex<State> = Mutex::new(State { status: Status::Idle, enabled: false, at_start: false, from_start: false, offered: false });
 
 /// The state; a panic elsewhere while it was held leaves it usable.
 fn state() -> MutexGuard<'static, State> {
@@ -70,9 +73,15 @@ fn source_dir() -> Option<PathBuf> {
     dir.join(SCRIPT).is_file().then_some(dir)
 }
 
-/// The desktop app turns the check at start on.
-pub(super) fn enable_at_start() {
-    state().at_start = true;
+/// The desktop app turns these updates, and their check at start, on.
+pub(super) fn enable() {
+    let mut s = state();
+    s.enabled = true;
+    s.at_start = true;
+}
+
+pub(super) fn enabled() -> bool {
+    state().enabled
 }
 
 /// Help ▸ Check for updates: ask now, whatever was known.

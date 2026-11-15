@@ -17,6 +17,11 @@ function Convert-OfficinaText([string] $Text) {
     $l = $l -creplace 'CARGO_BIN_EXE_pdfcraft-cli', 'CARGO_BIN_EXE_officinapdf-cli'
     $l = $l -creplace 'CARGO_BIN_EXE_pdfcraft\b', 'CARGO_BIN_EXE_officinapdf'
     $l = $l -creplace '(?<!apps/)(?<!-p )(?<![\w/-])pdfcraft-cli\b', 'officinapdf-cli'
+    # The desktop program's own name, where it prints or documents it: `officinapdf 0.5.0`,
+    # `Usage: officinapdf …`, `officinapdf: <error>`. Not log targets or file names.
+    $l = $l -creplace '"pdfcraft (?=[{"])', '"officinapdf '
+    $l = $l -creplace 'Usage: (`?)pdfcraft \[', 'Usage: $1officinapdf ['
+    $l = $l -creplace '"pdfcraft: \{report\}', '"officinapdf: {report}'
     $l
   }
   return (-join $out)

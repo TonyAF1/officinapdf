@@ -80,20 +80,26 @@ pub const RELEASES: &[Release] = &[
 ];
 
 impl PdfCraftApp {
-    /// The desktop app turns on the check at start for news in PdfCraft's source (the preference
-    /// "Check for updates when OfficinaPDF starts" can still turn it off). Tests never call this,
-    /// so they never run git.
+    /// The desktop app turns on the updates from PdfCraft's source: Help ▸ Check for updates, and
+    /// the check at start (which the preference "Check for updates when OfficinaPDF starts" can
+    /// still turn off). Tests never call this, so they never run git.
     #[cfg(not(target_arch = "wasm32"))]
     pub fn set_source_update_check(&mut self) {
-        update::enable_at_start();
+        update::enable();
     }
 }
 
 /// Help ▸ Check for updates: ask whether PdfCraft has something new and show the answer.
 pub(crate) fn check_for_updates(app: &mut PdfCraftApp) {
     #[cfg(not(target_arch = "wasm32"))]
-    update::check_now();
-    app.dialog = Some(Dialog::WhatsNew);
+    if update::enabled() {
+        update::check_now();
+        app.dialog = Some(Dialog::WhatsNew);
+        return;
+    }
+    // Not the desktop app (a test, the web build): PdfCraft's own check, which asks only the
+    // source it was given.
+    app.check_for_updates();
 }
 
 /// Each frame: the check at start, which opens this window when PdfCraft has something new.
