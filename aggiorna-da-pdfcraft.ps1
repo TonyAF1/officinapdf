@@ -198,8 +198,7 @@ if ($text -notmatch [regex]::Escape("version: `"$Versione`"")) {
     },
 
 "@
-  $head = [regex]::Match($text, 'pub const RELEASES: &\[Release\] = &\[?
-')
+  $head = [regex]::Match($text, 'pub const RELEASES: &\[Release\] = &\[\r?\n')
   if (-not $head.Success) { Park 'non trovo l''elenco delle versioni in whats_new.rs' }
   $text = $text.Insert($head.Index + $head.Length, ($entry -replace "`r`n", "`n"))
   [IO.File]::WriteAllText($notes, $text, $OfficinaUtf8)
