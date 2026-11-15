@@ -128,12 +128,12 @@
            (#143). Each has its own component with an HKLM key path, so Windows Installer removes it
            on uninstall; in this per-machine package both folders are the all-users ones. -->
       <Component Id="PdfcraftStartMenuShortcut" Directory="ProgramMenuFolder" Guid="A323BFB9-9F30-4CBC-A93E-3FEC02437BDC">
-        <Shortcut Id="StartMenuShortcut" Name="OfficinaPDF" Description="OfficinaPDF, lettore e editor PDF" Target="[#PdfcraftExe]" WorkingDirectory="INSTALLFOLDER" Icon="PdfcraftIcon.ico" IconIndex="0" />
+        <Shortcut Id="StartMenuShortcut" Name="OfficinaPDF" Description="OfficinaPDF, lettore e editor PDF" Target="[#PdfcraftExe]" WorkingDirectory="INSTALLFOLDER" />
         <RegistryValue Root="HKMU" Key="Software\OfficinaPDF\Shortcuts" Name="StartMenu" Type="integer" Value="1" KeyPath="yes" />
       </Component>
 
       <Component Id="PdfcraftDesktopShortcut" Directory="DesktopFolder" Guid="EE6CB204-56F9-4EC7-9A72-153990300860" Condition="INSTALLDESKTOPSHORTCUT = 1">
-        <Shortcut Id="DesktopShortcut" Name="OfficinaPDF" Description="OfficinaPDF, lettore e editor PDF" Target="[#PdfcraftExe]" WorkingDirectory="INSTALLFOLDER" Icon="PdfcraftIcon.ico" IconIndex="0" />
+        <Shortcut Id="DesktopShortcut" Name="OfficinaPDF" Description="OfficinaPDF, lettore e editor PDF" Target="[#PdfcraftExe]" WorkingDirectory="INSTALLFOLDER" />
         <RegistryValue Root="HKMU" Key="Software\OfficinaPDF\Shortcuts" Name="Desktop" Type="integer" Value="1" KeyPath="yes" />
       </Component>
 
@@ -149,6 +149,12 @@
         <RegistryValue Root="HKMU" Key="Software\Classes\SystemFileAssociations\.pdf\shell\OfficinaPDF.Edit" Name="Icon" Value="&quot;[#PdfcraftExe]&quot;,0" Type="string" />
         <RegistryValue Root="HKMU" Key="Software\Classes\SystemFileAssociations\.pdf\shell\OfficinaPDF.Edit" Name="MultiSelectModel" Value="Document" Type="string" />
         <RegistryValue Root="HKMU" Key="Software\Classes\SystemFileAssociations\.pdf\shell\OfficinaPDF.Edit\command" Value="&quot;[#PdfcraftExe]&quot; &quot;%1&quot;" Type="string" />
+        <!-- "Unisci file con OfficinaPDF", on the same switch: each selected file starts one launch
+             with the combine option, and the running OfficinaPDF collects them into its Combine files tab. -->
+        <RegistryValue Root="HKMU" Key="Software\Classes\SystemFileAssociations\.pdf\shell\OfficinaPDF.Combine" Value="Unisci file con OfficinaPDF" Type="string" />
+        <RegistryValue Root="HKMU" Key="Software\Classes\SystemFileAssociations\.pdf\shell\OfficinaPDF.Combine" Name="Icon" Value="&quot;[#PdfcraftExe]&quot;,0" Type="string" />
+        <RegistryValue Root="HKMU" Key="Software\Classes\SystemFileAssociations\.pdf\shell\OfficinaPDF.Combine" Name="MultiSelectModel" Value="Document" Type="string" />
+        <RegistryValue Root="HKMU" Key="Software\Classes\SystemFileAssociations\.pdf\shell\OfficinaPDF.Combine\command" Value="&quot;[#PdfcraftExe]&quot; --combine &quot;%1&quot;" Type="string" />
       </Component>
 
       <!-- Image context menu (#190): "Create PDF with OfficinaPDF…" opens the DPI chooser, without

@@ -11,7 +11,7 @@
         <Control Id="Description" Type="Text" X="20" Y="55" Width="330" Height="40" Text="Verrà installato [ProductName] per tutti gli utenti e aggiunto al menu Start. Fai clic su Installa per continuare." HideCondition="ALLUSERS &lt;&gt; 1" ShowCondition="ALLUSERS = 1" />
         <Control Id="DescriptionUser" Type="Text" X="20" Y="55" Width="330" Height="40" Text="Verrà installato [ProductName] solo per il tuo account e aggiunto al menu Start. Fai clic su Installa per continuare." HideCondition="ALLUSERS = 1" ShowCondition="ALLUSERS &lt;&gt; 1" />
         <Control Id="DesktopShortcut" Type="CheckBox" X="20" Y="105" Width="330" Height="17" Property="INSTALLDESKTOPSHORTCUT" CheckBoxValue="1" Text="Crea un collegamento sul &amp;desktop" />
-        <Control Id="PdfContextMenu" Type="CheckBox" X="20" Y="123" Width="330" Height="17" Property="INSTALLPDFCONTEXTMENU" CheckBoxValue="1" Text="Aggiungi &quot;&amp;Modifica con OfficinaPDF&quot; al menu del tasto destro dei file PDF" />
+        <Control Id="PdfContextMenu" Type="CheckBox" X="20" Y="123" Width="330" Height="17" Property="INSTALLPDFCONTEXTMENU" CheckBoxValue="1" Text="Aggiungi &amp;Modifica e Unisci file con OfficinaPDF al menu del tasto destro dei PDF" />
         <Control Id="Install" Type="PushButton" X="195" Y="145" Width="75" Height="23" Default="yes" DefaultCondition="ALLUSERS = 1" ElevationShield="yes" HideCondition="ALLUSERS &lt;&gt; 1" ShowCondition="ALLUSERS = 1" Text="&amp;Installa">
           <Publish Event="EndDialog" Value="Return" />
         </Control>

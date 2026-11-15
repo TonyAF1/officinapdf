@@ -25,6 +25,21 @@ pub struct Release {
 
 pub const RELEASES: &[Release] = &[
     Release {
+        version: "0.5.0",
+        date: "novembre 2026",
+        notes: &[
+            "Aggiornamenti direttamente dal codice open source di PdfCraft: Aiuto > Verifica aggiornamenti controlla se ci sono novità e, con \"Aggiorna ora\", prepara e installa da solo la nuova versione di OfficinaPDF. Il controllo si fa anche all'avvio (si può spegnere nelle Preferenze) e, dopo aver proposto un aggiornamento, non lo ripropone per una settimana.",
+            "Base aggiornata da PdfCraft 0.16 a PdfCraft 0.21.1: 2636 modifiche, tra cui circa 400 correzioni.",
+            "Vista divisa: due riquadri affiancati, con lo stesso documento o con due documenti diversi.",
+            "Pagina iniziale: puoi fissare gli strumenti che usi di più.",
+            "Stampa: formati di carta personalizzati, ricordati per ogni stampante, e stampa di un'area selezionata.",
+            "OCR: può usare anche Tesseract, se è installato sul computer. La correzione degli accenti italiani resta per il motore incorporato.",
+            "Segnalibri da esportare, importare e copiare; ricerca degli IBAN in Cerca e oscura; barra degli strumenti rapidi personalizzabile.",
+            "Nel menu del tasto destro dei PDF: \"Unisci file con OfficinaPDF\".",
+            "Traduzione italiana: ora viene dai cataloghi di PdfCraft, più completi, con le frasi proprie di OfficinaPDF.",
+        ],
+    },
+    Release {
         version: "0.4.0",
         date: "novembre 2026",
         notes: &[

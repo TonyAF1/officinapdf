@@ -34,10 +34,14 @@ param(
   # Avviato da OfficinaPDF: come -Installa, e alla fine aspetta Invio prima di chiudere la finestra.
   [switch] $Automatico,
   # Per chi risolve i conflitti a mano: lascia l'unione a metà nel ramo di prova invece di annullarla.
-  [switch] $LasciaConflitti
+  [switch] $LasciaConflitti,
+  # Per provare lo script: salta i test e i pacchetti, si ferma dopo aver portato l'unione su main.
+  [switch] $Prova
 )
 $ErrorActionPreference = 'Stop'
 $Root = $PSScriptRoot
+# Accented letters in a console window that isn't UTF-8 yet.
+try { [Console]::OutputEncoding = [Text.Encoding]::UTF8 } catch { }
 $Branch = 'aggiornamento-pdfcraft'
 Set-Location $Root
 . (Join-Path $Root 'packaging\windows\officinapdf-nome.ps1')
@@ -126,7 +130,8 @@ git worktree prune
 GitOk worktree add --quiet --detach $Scratch $Base
 $Me = @('-c', 'user.name=OfficinaPDF', '-c', 'user.email=officinapdf@localhost')
 function Renamed([string] $Commit, [string[]] $Parents) {
-  GitOk -C $Scratch checkout --quiet --detach $Commit
+  # --force: the checkout still holds the previous commit under OfficinaPDF's name.
+  GitOk -C $Scratch checkout --quiet --force --detach $Commit
   [void](Convert-OfficinaTree $Scratch $Old)
   GitOk -C $Scratch add -A
   $tree = GitText -C $Scratch write-tree
@@ -195,7 +200,7 @@ Say 'Preparo le traduzioni italiane'
 $env:CRAFT_I18N_DIR = & (Join-Path $Root 'packaging\windows\officinapdf-traduzioni.ps1')
 $env:CRAFT_I18N_REQUIRED = '1'
 & cargo fmt --all | Out-Null
-if (-not (Run 'Eseguo i test (può volerci più di mezz''ora)' { cargo test --workspace -j 4 })) { Park 'alcuni test non sono passati' }
+if (-not $Prova -and -not (Run 'Eseguo i test (può volerci più di mezz''ora)' { cargo test --workspace -j 4 })) { Park 'alcuni test non sono passati' }
 
 # ---- 5. su main --------------------------------------------------------------------------------
 GitOk add -A
@@ -206,6 +211,7 @@ GitOk branch --quiet -d $Branch
 Say 'Aggiornamento portato su main.' Green
 
 # ---- 6. pacchetti ------------------------------------------------------------------------------
+if ($Prova) { Say 'Prova finita: niente test, pacchetti e installazione.' Green; Finish 0 }
 Say "Creo installer e versione portatile in $Out (circa 15 minuti)"
 try { & (Join-Path $Root 'packaging\windows\package-officinapdf.ps1') -OutDir $Out | Out-Host }
 catch { Stop-Here "la creazione dei pacchetti non è riuscita: $_ (il ramo main contiene già l'aggiornamento, manca solo il pacchetto)." }

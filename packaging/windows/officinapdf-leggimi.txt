@@ -13,8 +13,15 @@ Installazione
      fai clic su "Ulteriori informazioni" e poi su "Esegui comunque".
   2. Scegli "Solo per me" (non servono permessi di amministratore) oppure
      "Tutti gli utenti del computer".
-  3. Scegli se creare il collegamento sul desktop e la voce "Modifica con OfficinaPDF"
-     nel menu del tasto destro dei file PDF, poi fai clic su Installa.
+  3. Scegli se creare il collegamento sul desktop e le voci "Modifica con OfficinaPDF" e
+     "Unisci file con OfficinaPDF" nel menu del tasto destro dei file PDF, poi fai clic
+     su Installa.
+
+Aggiornamenti
+  In OfficinaPDF: Aiuto > Verifica aggiornamenti. Se PdfCraft ha pubblicato novità,
+  "Aggiorna ora" le scarica dal suo codice open source, prepara la nuova versione di
+  OfficinaPDF e la installa (circa un'ora; intanto puoi continuare a lavorare).
+  Funziona sul computer dove c'è la cartella del progetto (pdfcraft-main).
 
 Versione portatile
   Estrai lo zip dove vuoi, anche su una chiavetta USB, e avvia officinapdf.exe.
