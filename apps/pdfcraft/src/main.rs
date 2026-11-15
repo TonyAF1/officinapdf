@@ -484,7 +484,9 @@ fn app_creator<'a>(
             }
             app.motion.source = Some(motion::source());
         }
-        // Private fork: no update check at start. Upstream releases would replace this build.
+        // OfficinaPDF: the check at start asks for news in PdfCraft's source, never for its releases,
+        // which would replace this build (`dialogs/whats_new.rs`).
+        app.set_source_update_check();
         app.printer_source = Some(pdfcraft_ui_egui::system_printers());
         app.two_sided_source = Some(pdfcraft_ui_egui::system_two_sided());
         app.os_key_store_ids = cfg!(any(target_os = "macos", target_os = "windows"));

@@ -277,7 +277,9 @@ fn cut_pages_bar(view: &mut DocView, ui: &mut egui::Ui, t: &Tokens) {
     let n = view.cut_pages.len();
     let text = if n == 1 {
         crate::i18n::fmt(
-            tl!("Page {page} holds more content than OfficinaPDF can read: part of it isn't drawn, and only part of its text can be found or copied."),
+            tl!(
+                "Page {page} holds more content than OfficinaPDF can read: part of it isn't drawn, and only part of its text can be found or copied."
+            ),
             &[("page", &page)],
         )
     } else {

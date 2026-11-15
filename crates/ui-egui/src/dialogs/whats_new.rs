@@ -1,10 +1,17 @@
 //! OfficinaPDF: Help ▸ What's new. What each OfficinaPDF version brought, newest first. The notes
 //! are written in Italian only, like the fork they describe; add a row to [`RELEASES`] with every
-//! version.
+//! version (`aggiorna-da-pdfcraft.ps1` adds one by itself).
+//!
+//! Above the notes, Help ▸ Check for updates: whether PdfCraft's open-source code has something
+//! new, and the button that makes and installs the next OfficinaPDF from it (`update`).
 
 use egui::RichText;
 
 use crate::theme::{self, Tokens};
+use crate::{Dialog, PdfCraftApp, widgets};
+
+#[cfg(not(target_arch = "wasm32"))]
+mod update;
 
 /// The lists scroll inside this height.
 const LIST_HEIGHT: f32 = 420.0;
@@ -57,11 +64,105 @@ pub const RELEASES: &[Release] = &[
     },
 ];
 
+impl PdfCraftApp {
+    /// The desktop app turns on the check at start for news in PdfCraft's source (the preference
+    /// "Check for updates when OfficinaPDF starts" can still turn it off). Tests never call this,
+    /// so they never run git.
+    #[cfg(not(target_arch = "wasm32"))]
+    pub fn set_source_update_check(&mut self) {
+        update::enable_at_start();
+    }
+}
+
+/// Help ▸ Check for updates: ask whether PdfCraft has something new and show the answer.
+pub(crate) fn check_for_updates(app: &mut PdfCraftApp) {
+    #[cfg(not(target_arch = "wasm32"))]
+    update::check_now();
+    app.dialog = Some(Dialog::WhatsNew);
+}
+
+/// Each frame: the check at start, which opens this window when PdfCraft has something new.
+pub(super) fn poll(app: &mut PdfCraftApp) {
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        let settings = crate::portable::data_dir().map(std::path::Path::to_path_buf).or_else(|| eframe::storage_dir("OfficinaPDF"));
+        if update::poll(app.update_check_at_start, settings.as_deref()) && app.dialog.is_none() {
+            app.dialog = Some(Dialog::WhatsNew);
+        }
+        // The answer comes from another thread: look again soon, even with no input.
+        if update::status() == update::Status::Checking
+            && let Some(ctx) = &app.ctx
+        {
+            ctx.request_repaint_after(std::time::Duration::from_millis(300));
+        }
+    }
+    #[cfg(target_arch = "wasm32")]
+    let _ = app;
+}
+
+/// The update panel: what the check found, and the button for what can be done next.
+#[cfg(not(target_arch = "wasm32"))]
+fn update_ui(ui: &mut egui::Ui, t: &Tokens) {
+    use update::Status;
+    let status = update::status();
+    egui::Frame::NONE
+        .fill(t.card)
+        .stroke(egui::Stroke::new(1.0, t.border))
+        .corner_radius(egui::CornerRadius::same(10))
+        .inner_margin(egui::Margin::same(12))
+        .show(ui, |ui| {
+            ui.set_width(ui.available_width());
+            ui.label(RichText::new("Aggiornamenti da PdfCraft").font(theme::semibold(15.0)));
+            ui.add_space(4.0);
+            let (text, button) = match &status {
+                Status::Idle => ("OfficinaPDF prende le novità direttamente dal codice open source di PdfCraft.".to_owned(), Some("Verifica aggiornamenti")),
+                Status::Checking => ("Controllo le novità di PdfCraft…".to_owned(), None),
+                Status::UpToDate => ("OfficinaPDF ha già tutte le novità di PdfCraft.".to_owned(), Some("Verifica di nuovo")),
+                Status::Available => (
+                    "PdfCraft ha pubblicato delle novità. \"Aggiorna ora\" le scarica, prepara la nuova versione di OfficinaPDF e la installa: ci vuole \
+                     circa un'ora e intanto puoi continuare a lavorare. Alla fine OfficinaPDF si chiude e si riapre aggiornato."
+                        .to_owned(),
+                    Some("Aggiorna ora"),
+                ),
+                Status::Started => (
+                    "Aggiornamento avviato in una finestra a parte: lasciala aperta. Alla fine OfficinaPDF si chiude e si riapre aggiornato. Se qualcosa \
+                     non va, la finestra lo dice e OfficinaPDF resta com'è."
+                        .to_owned(),
+                    None,
+                ),
+                Status::NoSource => (
+                    "Questa copia di OfficinaPDF non trova la cartella del suo codice sorgente: l'aggiornamento automatico funziona solo sul computer \
+                     dove OfficinaPDF viene preparato."
+                        .to_owned(),
+                    None,
+                ),
+                Status::Failed(why) => (format!("Non riesco a controllare gli aggiornamenti: {why}."), Some("Riprova")),
+            };
+            ui.horizontal_wrapped(|ui| {
+                if status == Status::Checking {
+                    ui.spinner();
+                    ui.ctx().request_repaint_after(std::time::Duration::from_millis(200));
+                }
+                ui.label(RichText::new(text).color(t.text_muted));
+            });
+            if let Some(label) = button {
+                ui.add_space(8.0);
+                let primary = status == Status::Available;
+                if widgets::pill_button(ui, label, primary).clicked() {
+                    if primary { update::start() } else { update::check_now() }
+                }
+            }
+        });
+    ui.add_space(12.0);
+}
+
 /// The dialog's content.
 pub fn ui(ui: &mut egui::Ui) {
     let t = Tokens::get(ui.ctx());
     ui.label(RichText::new(tl!("What's new")).font(theme::semibold(18.0)));
     ui.add_space(8.0);
+    #[cfg(not(target_arch = "wasm32"))]
+    update_ui(ui, &t);
     egui::ScrollArea::vertical().max_height(LIST_HEIGHT).auto_shrink([false, true]).show(ui, |ui| {
         for release in RELEASES {
             ui.horizontal(|ui| {

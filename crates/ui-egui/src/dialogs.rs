@@ -21,7 +21,7 @@ pub(super) mod printer_marks_ui;
 mod prompts;
 pub(super) mod protect;
 pub(super) mod standards_ui;
-mod whats_new;
+pub(crate) mod whats_new;
 pub(super) mod word_count_ui;
 
 #[cfg(test)]
@@ -114,6 +114,7 @@ fn dialogs(app: &mut PdfCraftApp, ctx: &egui::Context) {
     remote_link_prompt(app, ctx);
     full_screen_prompt(app, ctx);
     crate::updates::dialog(app, ctx);
+    whats_new::poll(app);
     if app.dialog != Some(Dialog::WordCount) {
         app.word_count_draft.cancel();
     }

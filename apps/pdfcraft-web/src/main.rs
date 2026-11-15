@@ -218,7 +218,9 @@ mod host {
     fn queue_open(name: &str, data: &FileData, inbox: &pdfcraft_ui_egui::Inbox, ctx: &egui::Context) {
         let name = if name == "document" { DEFAULT_NAME } else { name }.to_string();
         let FileData::Bytes(view) = data else {
-            eframe::web_sys::console::warn_1(&format!("OfficinaPDF: host file {name} came as a File; OfficinaPDF reads bytes only; not opened").into());
+            eframe::web_sys::console::warn_1(
+                &format!("OfficinaPDF: host file {name} came as a File; OfficinaPDF reads bytes only; not opened").into(),
+            );
             return;
         };
         // A file from the host is untrusted input: refuse an oversized one before copying it into the app's memory.

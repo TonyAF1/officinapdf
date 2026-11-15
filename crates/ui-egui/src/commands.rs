@@ -257,6 +257,7 @@ impl PdfCraftApp {
             "optimize.reduce" => self.reduce_file_size(),
             "help.shortcuts" => self.dialog = Some(Dialog::Shortcuts),
             "help.whats_new" => self.dialog = Some(Dialog::WhatsNew),
+            "help.check_updates" => crate::dialogs::whats_new::check_for_updates(self),
             "help.about" => self.dialog = Some(Dialog::About),
             _ => return None,
         }

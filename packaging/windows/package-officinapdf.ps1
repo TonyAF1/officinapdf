@@ -55,6 +55,10 @@ Write-Output "OfficinaPDF $Version for Windows x64"
 if (-not $SkipBuild) {
   $env:CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_RUSTFLAGS = '-C target-feature=+crt-static'
   $env:PDFCRAFT_REQUIRE_WINRES = '1'
+  # The interface translations (PdfCraft's catalogs under OfficinaPDF's name, plus OfficinaPDF's
+  # own Italian rows): without them the build is English only.
+  if (-not $env:CRAFT_I18N_DIR) { $env:CRAFT_I18N_DIR = & (Join-Path $PSScriptRoot 'officinapdf-traduzioni.ps1') }
+  $env:CRAFT_I18N_REQUIRED = '1'
   Push-Location $Root
   try { Invoke-Native 'cargo build' { cargo build --release --locked -p pdfcraft -p pdfcraft-cli --target $Target } }
   finally { Pop-Location }

@@ -1,50 +1,88 @@
 <#
 .SYNOPSIS
-  Porta in OfficinaPDF gli aggiornamenti di PdfCraft e, se richiesto, crea la nuova versione.
+  Aggiorna OfficinaPDF con le ultime novità del codice open source di PdfCraft e crea la nuova versione.
 
 .DESCRIPTION
-  1. Controlla se PdfCraft (remote "upstream") ha novità. Se non ne ha, si ferma.
+  È lo stesso script che OfficinaPDF avvia da Aiuto > Verifica aggiornamenti.
+  1. Controlla se PdfCraft (github.com/storytold/pdfcraft, remote "upstream") ha novità. Se non ne
+     ha, si ferma.
   2. Le unisce in un ramo di prova, "aggiornamento-pdfcraft": il ramo main resta com'era finché
-     tutto non è andato bene.
-  3. Riapplica il nome OfficinaPDF ai file del programma, lasciando "PdfCraft" nelle righe dove
-     deve restare (crediti, licenza, testi di prova).
-  4. Controlli: formattazione, clippy, test, traduzioni italiane mancanti.
-  5. Se tutto è a posto, porta le modifiche su main.
-  6. Con -Versione 0.5.0: aggiorna il numero di versione, aggiunge la voce in Aiuto > Novità,
-     crea l'installer e lo zip portatile in ..\Versioni\OfficinaPDF v0.5, poi commit e tag.
+     tutto non è andato bene. Prima di unire dà a PdfCraft il nome OfficinaPDF, così le due
+     versioni si scontrano solo dove OfficinaPDF ha davvero cambiato qualcosa.
+  3. Numero di versione (da solo: 0.5.0 diventa 0.6.0) e voce in Aiuto > Novità.
+  4. Traduzioni italiane, poi i controlli: formattazione e test.
+  5. Se tutto è a posto porta le modifiche su main, crea l'installer e lo zip portatile in
+     ..\Versioni\OfficinaPDF v0.6 e mette il tag.
+  6. Con -Installa: chiude OfficinaPDF, installa la nuova versione e la riapre.
 
   Si ferma senza toccare main quando:
-    - ci sono conflitti (PdfCraft ha cambiato le stesse righe di OfficinaPDF): l'unione viene annullata;
-    - un controllo fallisce o mancano traduzioni: il lavoro resta nel ramo "aggiornamento-pdfcraft".
-  In questi casi passa a Claude il messaggio finale.
+    - PdfCraft ha cambiato le stesse righe di OfficinaPDF (conflitti): l'unione viene annullata;
+    - un controllo fallisce: il lavoro resta nel ramo "aggiornamento-pdfcraft".
+  In questi casi passa a Claude il messaggio finale (è anche nel file di registro in ..\Versioni).
 
 .EXAMPLE
-  pwsh .\aggiorna-da-pdfcraft.ps1                     # solo aggiornamento, nessuna nuova versione
-  pwsh .\aggiorna-da-pdfcraft.ps1 -Versione 0.5.0     # aggiornamento e nuova versione
   pwsh .\aggiorna-da-pdfcraft.ps1 -SoloControllo      # dice solo se ci sono novità
+  pwsh .\aggiorna-da-pdfcraft.ps1                     # aggiorna e crea la nuova versione
+  pwsh .\aggiorna-da-pdfcraft.ps1 -Installa           # … e la installa
+  pwsh .\aggiorna-da-pdfcraft.ps1 -Versione 1.0.0     # sceglie il numero di versione
 #>
 param(
   [ValidatePattern('^\d+\.\d+\.\d+$')] [string] $Versione,
-  [switch] $SoloControllo
+  [switch] $SoloControllo,
+  # Installa la nuova versione e riapre OfficinaPDF.
+  [switch] $Installa,
+  # Avviato da OfficinaPDF: come -Installa, e alla fine aspetta Invio prima di chiudere la finestra.
+  [switch] $Automatico,
+  # Per chi risolve i conflitti a mano: lascia l'unione a metà nel ramo di prova invece di annullarla.
+  [switch] $LasciaConflitti
 )
 $ErrorActionPreference = 'Stop'
 $Root = $PSScriptRoot
 $Branch = 'aggiornamento-pdfcraft'
 Set-Location $Root
+. (Join-Path $Root 'packaging\windows\officinapdf-nome.ps1')
 # WiX installed as a .NET tool, for package-officinapdf.ps1.
 $env:PATH = "$env:PATH;$env:USERPROFILE\.dotnet\tools"
+if ($Automatico) { $Installa = $true }
+$Versions = Join-Path (Split-Path $Root) 'Versioni'
 
 function Say([string] $Text, [string] $Color = 'Cyan') { Write-Host "`n==> $Text" -ForegroundColor $Color }
+function Finish([int] $Code) {
+  try { Stop-Transcript | Out-Null } catch { }
+  if ($Automatico) { Write-Host ''; Read-Host 'Premi Invio per chiudere questa finestra' | Out-Null }
+  exit $Code
+}
 function Stop-Here([string] $Text) {
   Write-Host "`n*** FERMATO: $Text" -ForegroundColor Yellow
-  Write-Host 'Il ramo main non è stato modificato. Passa questo messaggio a Claude.' -ForegroundColor Yellow
-  exit 1
+  Write-Host 'La copia installata di OfficinaPDF non è stata toccata: continua a funzionare come prima.' -ForegroundColor Yellow
+  Write-Host 'Passa questo messaggio a Claude.' -ForegroundColor Yellow
+  Finish 1
 }
 function GitOk { & git.exe @args; if ($LASTEXITCODE -ne 0) { throw "git $($args -join ' ') non riuscito" } }
+function GitText { $r = & git.exe @args; if ($LASTEXITCODE -ne 0) { throw "git $($args -join ' ') non riuscito" }; return ($r -join "`n").Trim() }
 function Run([string] $What, [scriptblock] $Block) {
   Say $What
   & $Block | Out-Host
   return ($LASTEXITCODE -eq 0)
+}
+# Leaves the trial branch with the work so far and goes back to main.
+function Park([string] $Why) {
+  GitOk add -A
+  if (git status --porcelain) { GitOk commit --quiet -m "Aggiornamento da PdfCraft ($Why)" }
+  GitOk switch --quiet main
+  Stop-Here "$Why. Il lavoro è nel ramo $Branch."
+}
+
+# Anything unexpected: say so and keep the window open, instead of vanishing.
+trap {
+  Write-Host "`n*** ERRORE: $_" -ForegroundColor Red
+  Write-Host "Ramo attuale del progetto: $(git branch --show-current). Passa questo messaggio a Claude." -ForegroundColor Yellow
+  Finish 1
+}
+
+if (-not $SoloControllo) {
+  New-Item -ItemType Directory -Force $Versions | Out-Null
+  try { Start-Transcript -Path (Join-Path $Versions "aggiornamento-$(Get-Date -Format 'yyyy-MM-dd-HHmm').log") | Out-Null } catch { }
 }
 
 # ---- 1. novità? --------------------------------------------------------------------------------
@@ -53,126 +91,149 @@ if ((git branch --show-current) -ne 'main') { Stop-Here 'il progetto non è sul 
 Say 'Controllo le novità di PdfCraft'
 GitOk fetch --quiet upstream main
 $New = @(git log --oneline HEAD..upstream/main)
-if ($New.Count -eq 0 -and -not $Versione) {
+if ($New.Count -eq 0) {
   Say 'Nessuna novità: OfficinaPDF ha già tutti gli aggiornamenti di PdfCraft.' Green
-  exit 0
+  Finish 0
 }
 Write-Host "$($New.Count) modifiche nuove di PdfCraft:"
 $New | Select-Object -First 15 | ForEach-Object { Write-Host "  $_" }
 if ($New.Count -gt 15) { Write-Host "  … e altre $($New.Count - 15)" }
 if ($SoloControllo) { exit 0 }
+if (git branch --list $Branch) { Stop-Here "esiste già il ramo $Branch di un aggiornamento precedente non concluso." }
+
+$Old = Get-OfficinaVersion $Root
+if (-not $Old) { Stop-Here 'non trovo la versione in Cargo.toml.' }
+if (-not $Versione) {
+  $p = $Old -split '\.'
+  $Versione = "$($p[0]).$([int]$p[1] + 1).0"
+}
+$short = ($Versione -split '\.')[0..1] -join '.'
+$Out = Join-Path $Versions "OfficinaPDF v$short"
+if (Test-Path $Out) { Stop-Here "la cartella $Out esiste già: non la sovrascrivo." }
+if (git tag --list "v$Versione") { Stop-Here "la versione $Versione esiste già." }
+$Upstream = [regex]::Match((GitText show upstream/main:Cargo.toml), '(?m)^\[workspace\.package\]\s*\r?\nversion = "([^"]+)"').Groups[1].Value
+Say "Preparo OfficinaPDF $Versione da PdfCraft $Upstream"
 
 # ---- 2. unione in un ramo di prova -------------------------------------------------------------
-if (git branch --list $Branch) { Stop-Here "esiste già il ramo $Branch di un aggiornamento precedente non concluso." }
-GitOk switch --quiet -c $Branch
-if ($New.Count -gt 0) {
-  Say 'Unisco le novità'
-  git merge --no-edit upstream/main | Out-Host
-  if ($LASTEXITCODE -ne 0) {
-    $conflicts = @(git diff --name-only --diff-filter=U)
-    git merge --abort
-    GitOk switch --quiet main
-    GitOk branch --quiet -D $Branch
-    Stop-Here "conflitti nei file: $($conflicts -join ', '). L'unione è stata annullata."
-  }
+# PdfCraft's two versions (the one OfficinaPDF already has, and the new one) get OfficinaPDF's
+# name and version first, in a scratch checkout. Merged from there, the rename is the same on
+# every side and only OfficinaPDF's real changes can collide with PdfCraft's.
+Say 'Do a PdfCraft il nome OfficinaPDF'
+$Base = GitText merge-base HEAD upstream/main
+$Scratch = Join-Path $Root 'target\officinapdf-unione'
+if (Test-Path $Scratch) { git worktree remove --force $Scratch 2>$null | Out-Null }
+git worktree prune
+GitOk worktree add --quiet --detach $Scratch $Base
+$Me = @('-c', 'user.name=OfficinaPDF', '-c', 'user.email=officinapdf@localhost')
+function Renamed([string] $Commit, [string[]] $Parents) {
+  GitOk -C $Scratch checkout --quiet --detach $Commit
+  [void](Convert-OfficinaTree $Scratch $Old)
+  GitOk -C $Scratch add -A
+  $tree = GitText -C $Scratch write-tree
+  $p = $Parents | ForEach-Object { '-p'; $_ }
+  return (GitText @Me commit-tree $tree @p -m "OfficinaPDF's name on $Commit")
 }
+$BaseR = Renamed $Base @($Base)
+$NewR = Renamed 'upstream/main' @($BaseR)
+$Ours = GitText @Me commit-tree 'main^{tree}' -p $BaseR -m 'OfficinaPDF'
+GitOk worktree remove --force $Scratch
 
-# ---- 3. nome OfficinaPDF -----------------------------------------------------------------------
-Say 'Riapplico il nome OfficinaPDF'
-# Righe dove "PdfCraft" deve restare: crediti, licenza e testi di prova che lo citano apposta.
-$Keep = 'Based on PdfCraft|Basato su PdfCraft|based on PdfCraft|PdfCraft contributors|PdfCraft patch:|PdfCraft rewraps|github\.com/storytold/pdfcraft'
-$Utf8 = New-Object System.Text.UTF8Encoding($false)
-$files = @(git ls-files 'apps/*.rs' 'crates/*.rs' 'crates/ui-egui/src/i18n/*.tsv') |
-  Where-Object { $_ -notmatch 'whats_new\.rs$' }
-$changed = 0
-foreach ($f in $files) {
-  $path = Join-Path $Root $f
-  $text = [IO.File]::ReadAllText($path)
-  $lines = $text -split "(?<=`n)"
-  $out = foreach ($line in $lines) {
-    if ($line -match $Keep) { $line; continue }
-    $l = $line -creplace '\bPdfCraftData\b', 'OfficinaPDFData'
-    $l = $l -creplace '\bPdfCraft\b', 'OfficinaPDF'
-    $l = $l -creplace 'CARGO_BIN_EXE_pdfcraft-cli', 'CARGO_BIN_EXE_officinapdf-cli'
-    $l = $l -creplace 'CARGO_BIN_EXE_pdfcraft\b', 'CARGO_BIN_EXE_officinapdf'
-    $l = $l -creplace '(?<!apps/)(?<!-p )(?<![\w/-])pdfcraft-cli\b', 'officinapdf-cli'
-    $l
-  }
-  $new = -join $out
-  if ($new -cne $text) { [IO.File]::WriteAllText($path, $new, $Utf8); $changed++; Write-Host "  $f" }
+Say 'Unisco le novità'
+GitOk switch --quiet -c $Branch $Ours
+git merge --no-commit --no-ff $NewR | Out-Host
+# What each side always keeps: PdfCraft's lock file (cargo brings it up to date), OfficinaPDF's
+# own README (PdfCraft's is kept beside it), and no catalogs in the repository.
+foreach ($f in @(git diff --name-only --diff-filter=U)) {
+  if ($f -eq 'Cargo.lock') { GitOk checkout --theirs -- $f; GitOk add -- $f }
+  elseif ($f -eq 'README.md') { GitOk checkout --ours -- $f; GitOk add -- $f }
 }
-Write-Host "$changed file aggiornati."
-
-# ---- 4. nuova versione (facoltativa) -----------------------------------------------------------
-if ($Versione) {
-  Say "Imposto la versione $Versione"
-  $cargo = Join-Path $Root 'Cargo.toml'
-  $text = [IO.File]::ReadAllText($cargo)
-  $old = [regex]::Match($text, '(?m)^\[workspace\.package\]\s*\r?\nversion = "([^"]+)"').Groups[1].Value
-  if (-not $old) { Stop-Here 'non trovo la versione in Cargo.toml.' }
-  # Only the workspace version and the pdfcraft-* path dependencies, never another crate's version.
-  $lines = $text -split "(?<=`n)" | ForEach-Object {
-    if ($_ -match '^version = "' -or $_ -match '^pdfcraft-[\w-]+ = \{ path') { $_.Replace("`"$old`"", "`"$Versione`"") } else { $_ }
+$readme = GitText show upstream/main:README.md
+[IO.File]::WriteAllText((Join-Path $Root 'docs\README-pdfcraft.md'), $readme + "`n", $OfficinaUtf8)
+GitOk add -- docs/README-pdfcraft.md
+$conflicts = @(git diff --name-only --diff-filter=U)
+if ($conflicts.Count -gt 0) {
+  if ($LasciaConflitti) {
+    Write-Host "`nConflitti da risolvere nel ramo $($Branch): $($conflicts -join ', ')" -ForegroundColor Yellow
+    Write-Host "Poi: git add -A; git commit-tree (git write-tree) -p main -p upstream/main; git merge --quit" -ForegroundColor Yellow
+    Finish 1
   }
-  [IO.File]::WriteAllText($cargo, (-join $lines), $Utf8)
+  git merge --abort
+  GitOk switch --quiet main
+  GitOk branch --quiet -D $Branch
+  Stop-Here "PdfCraft ha cambiato le stesse righe di OfficinaPDF in: $($conflicts -join ', '). L'unione è stata annullata."
+}
+# The merge as history records it: OfficinaPDF's main plus PdfCraft's main.
+$tree = GitText write-tree
+$merge = GitText commit-tree $tree -p main -p upstream/main -m "Merge PdfCraft $Upstream into OfficinaPDF"
+GitOk merge --quit
+GitOk update-ref "refs/heads/$Branch" $merge
+[void](Convert-OfficinaTree $Root $null)
 
-  $mesi = 'gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'
-  $data = "$($mesi[(Get-Date).Month - 1]) $((Get-Date).Year)"
-  $notes = Join-Path $Root 'crates\ui-egui\src\dialogs\whats_new.rs'
-  $text = [IO.File]::ReadAllText($notes)
+# ---- 3. nuova versione -------------------------------------------------------------------------
+Say "Imposto la versione $Versione"
+$cargo = Join-Path $Root 'Cargo.toml'
+[IO.File]::WriteAllText($cargo, (Convert-OfficinaVersion ([IO.File]::ReadAllText($cargo)) $Versione), $OfficinaUtf8)
+$mesi = 'gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'
+$data = "$($mesi[(Get-Date).Month - 1]) $((Get-Date).Year)"
+$notes = Join-Path $Root 'crates\ui-egui\src\dialogs\whats_new.rs'
+$text = [IO.File]::ReadAllText($notes)
+if ($text -notmatch [regex]::Escape("version: `"$Versione`"")) {
   $entry = @"
 pub const RELEASES: &[Release] = &[
     Release {
         version: "$Versione",
         date: "$data",
-        notes: &["Ultime correzioni e novità di PdfCraft ($($New.Count) modifiche)."],
+        notes: &["Aggiornamento a PdfCraft $($Upstream): $($New.Count) modifiche tra correzioni e novità."],
     },
 "@
-  $text = $text.Replace("pub const RELEASES: &[Release] = &[`n", ($entry -replace "`r`n", "`n"))
-  [IO.File]::WriteAllText($notes, $text, $Utf8)
+  $text = $text.Replace("pub const RELEASES: &[Release] = &[`n", ($entry -replace "`r`n", "`n") + "`n")
+  [IO.File]::WriteAllText($notes, $text, $OfficinaUtf8)
 }
 
-# ---- 5. controlli ------------------------------------------------------------------------------
+# ---- 4. traduzioni e controlli -----------------------------------------------------------------
+Say 'Preparo le traduzioni italiane'
+$env:CRAFT_I18N_DIR = & (Join-Path $Root 'packaging\windows\officinapdf-traduzioni.ps1')
+$env:CRAFT_I18N_REQUIRED = '1'
 & cargo fmt --all | Out-Null
-if (-not (Run 'Controllo clippy (qualche minuto)' { cargo clippy --workspace --all-targets -j 6 -- -D warnings })) {
-  GitOk add -A; GitOk commit --quiet -m 'Aggiornamento da PdfCraft (clippy non superato)'
-  GitOk switch --quiet main
-  Stop-Here "clippy ha trovato errori. Il lavoro è nel ramo $Branch."
-}
-if (-not (Run 'Eseguo i test (può volerci più di mezz''ora)' { cargo test --workspace -j 4 })) {
-  GitOk add -A; GitOk commit --quiet -m 'Aggiornamento da PdfCraft (test non superati)'
-  GitOk switch --quiet main
-  Stop-Here "alcuni test non sono passati. Il lavoro è nel ramo $Branch."
-}
-Say 'Controllo le traduzioni italiane'
-$report = & cargo xtask i18n-report 2>$null
-$it = $report | Where-Object { $_ -match '^\s*it\s+(\d+) missing' } | Select-Object -First 1
-if ($it -and [int]([regex]::Match($it, '\d+').Value) -gt 0) {
-  Write-Host $it
-  GitOk add -A; GitOk commit --quiet -m 'Aggiornamento da PdfCraft (traduzioni italiane mancanti)'
-  GitOk switch --quiet main
-  Stop-Here "mancano traduzioni italiane: $($it.Trim()). Il lavoro è nel ramo $Branch."
-}
+if (-not (Run 'Eseguo i test (può volerci più di mezz''ora)' { cargo test --workspace -j 4 })) { Park 'alcuni test non sono passati' }
 
-# ---- 6. su main --------------------------------------------------------------------------------
+# ---- 5. su main --------------------------------------------------------------------------------
 GitOk add -A
-$message = if ($Versione) { "OfficinaPDF $Versione" } else { 'Aggiornamento da PdfCraft' }
-if (git status --porcelain) { GitOk commit --quiet -m "$($message): rename after merging PdfCraft" }
+if (git status --porcelain) { GitOk commit --quiet -m "OfficinaPDF $Versione" }
 GitOk switch --quiet main
 GitOk merge --quiet --ff-only $Branch
 GitOk branch --quiet -d $Branch
 Say 'Aggiornamento portato su main.' Green
 
-# ---- 7. pacchetti ------------------------------------------------------------------------------
-if ($Versione) {
-  $short = ($Versione -split '\.')[0..1] -join '.'
-  $out = Join-Path (Split-Path $Root) "Versioni\OfficinaPDF v$short"
-  if (Test-Path $out) { Stop-Here "la cartella $out esiste già: non la sovrascrivo." }
-  Say "Creo installer e versione portatile in $out (circa 10 minuti)"
-  & (Join-Path $Root 'packaging\windows\package-officinapdf.ps1') -OutDir $out
-  if ($LASTEXITCODE -ne 0) { Stop-Here 'la creazione dei pacchetti non è riuscita (main contiene già l''aggiornamento).' }
-  $leggimi = [IO.File]::ReadAllText((Join-Path $Root 'packaging\windows\officinapdf-leggimi.txt')).Replace('{VERSIONE}', $Versione)
-  [IO.File]::WriteAllText((Join-Path $out 'LEGGIMI.txt'), $leggimi, $Utf8)
-  GitOk tag "v$Versione"
-  Say "OfficinaPDF $Versione è pronta in $out" Green
+# ---- 6. pacchetti ------------------------------------------------------------------------------
+Say "Creo installer e versione portatile in $Out (circa 15 minuti)"
+try { & (Join-Path $Root 'packaging\windows\package-officinapdf.ps1') -OutDir $Out | Out-Host }
+catch { Stop-Here "la creazione dei pacchetti non è riuscita: $_ (il ramo main contiene già l'aggiornamento, manca solo il pacchetto)." }
+$leggimi = [IO.File]::ReadAllText((Join-Path $Root 'packaging\windows\officinapdf-leggimi.txt')).Replace('{VERSIONE}', $Versione)
+[IO.File]::WriteAllText((Join-Path $Out 'LEGGIMI.txt'), $leggimi, $OfficinaUtf8)
+GitOk tag "v$Versione"
+Say "OfficinaPDF $Versione è pronta in $Out" Green
+
+# ---- 7. installazione --------------------------------------------------------------------------
+if ($Installa) {
+  $msi = Join-Path $Out "OfficinaPDF-$Versione-x64.msi"
+  Say 'Installo la nuova versione'
+  $open = @(Get-Process officinapdf -ErrorAction SilentlyContinue)
+  if ($open.Count -gt 0) {
+    Write-Host 'Chiudo OfficinaPDF (se chiede di salvare un documento, rispondi nella sua finestra)…'
+    $open | ForEach-Object { [void]$_.CloseMainWindow() }
+    while (Get-Process officinapdf -ErrorAction SilentlyContinue) { Start-Sleep -Seconds 1 }
+  }
+  # An update keeps the copy where it is: for all users when that is how it was installed.
+  $all = [bool](Get-ItemProperty 'HKLM:\Software\OfficinaPDF' -Name InstallDir -ErrorAction SilentlyContinue)
+  $arguments = @('/i', "`"$msi`"", '/passive', '/norestart')
+  if ($all) { $arguments += 'ALLUSERS=1' }
+  $code = (Start-Process msiexec.exe -ArgumentList $arguments -Wait -PassThru).ExitCode
+  if ($code -ne 0) { Stop-Here "l'installazione non è riuscita (codice $code). Puoi installarla a mano: $msi" }
+  $key = if ($all) { 'HKLM:\Software\OfficinaPDF' } else { 'HKCU:\Software\OfficinaPDF' }
+  $dir = (Get-ItemProperty $key -Name InstallDir -ErrorAction SilentlyContinue).InstallDir
+  $exe = if ($dir) { Join-Path $dir 'officinapdf.exe' }
+  if ($exe -and (Test-Path $exe)) { Start-Process $exe }
+  Say "OfficinaPDF $Versione è installata." Green
 }
+Finish 0

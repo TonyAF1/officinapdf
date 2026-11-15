@@ -196,7 +196,11 @@ impl Ocr {
                     .words()
                     .map(|w| {
                         let r = w.bounding_rect();
-                        Word::new(crate::accents::restore(&w.to_string()), clip([r.left() as f32, r.top() as f32, r.right() as f32, r.bottom() as f32], before), "ocrs")
+                        Word::new(
+                            crate::accents::restore(&w.to_string()),
+                            clip([r.left() as f32, r.top() as f32, r.right() as f32, r.bottom() as f32], before),
+                            "ocrs",
+                        )
                     })
                     .filter(|w| !w.text.trim().is_empty())
                     .collect(),
