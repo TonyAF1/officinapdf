@@ -2592,6 +2592,17 @@ usage = "Embedded in pdfcraft.exe by apps/pdfcraft/build.rs (Explorer, taskbar, 
 sha256 = "7aa075f47a2885584893fd88e1e10b751b0c7ffb5fd17e4a0e67541ea814d3b4"
 
 [[asset]]
+path = "packaging/windows/officinapdf-it.tsv"
+title = "OfficinaPDF Italian interface rows"
+author = "Antonio (OfficinaPDF), written with Claude"
+source = "Contributor-original: translated from the English interface text, like the craft-i18n catalogs they are added to"
+licence = "MIT OR Apache-2.0"
+licence_file = "LICENSE-MIT"
+kind = "translation"
+usage = "Appended to the Italian catalog by packaging/windows/officinapdf-traduzioni.ps1: OfficinaPDF's own strings, and rows PdfCraft's catalog lacks"
+sha256 = "2866347d74f034011774ac8b57ccfdfa2ce966dec64dabcdbd7d5c4715022f2e"
+
+[[asset]]
 path = "assets/app-icon/pdfcraft-document.svg"
 title = "PdfCraft PDF document icon (master vector)"
 author = "Lucide Icons and Contributors (document outline); PdfCraft contributors (PDF badge, lettering and composition)"

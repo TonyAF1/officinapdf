@@ -191,23 +191,33 @@ $notes = Join-Path $Root 'crates\ui-egui\src\dialogs\whats_new.rs'
 $text = [IO.File]::ReadAllText($notes)
 if ($text -notmatch [regex]::Escape("version: `"$Versione`"")) {
   $entry = @"
-pub const RELEASES: &[Release] = &[
     Release {
         version: "$Versione",
         date: "$data",
         notes: &["Aggiornamento a PdfCraft $($Upstream): $quante tra correzioni e novità."],
     },
+
 "@
-  $text = $text.Replace("pub const RELEASES: &[Release] = &[`n", ($entry -replace "`r`n", "`n") + "`n")
+  $head = [regex]::Match($text, 'pub const RELEASES: &\[Release\] = &\[?
+')
+  if (-not $head.Success) { Park 'non trovo l''elenco delle versioni in whats_new.rs' }
+  $text = $text.Insert($head.Index + $head.Length, ($entry -replace "`r`n", "`n"))
   [IO.File]::WriteAllText($notes, $text, $OfficinaUtf8)
 }
 
 # ---- 4. traduzioni e controlli -----------------------------------------------------------------
 Say 'Preparo le traduzioni italiane'
-$env:CRAFT_I18N_DIR = & (Join-Path $Root 'packaging\windows\officinapdf-traduzioni.ps1')
-$env:CRAFT_I18N_REQUIRED = '1'
+# Now, so a missing catalog stops the update before the long part; the packages embed them.
+$i18n = & (Join-Path $Root 'packaging\windows\officinapdf-traduzioni.ps1')
 & cargo fmt --all | Out-Null
+# The tests run as PdfCraft's own do: in English (some look for English labels, and this computer
+# is Italian), so without the catalogs. Vulkan, unless WGPU_BACKEND says otherwise: the tests that
+# draw crash on this computer's Direct3D 12 driver.
+Remove-Item Env:CRAFT_I18N_DIR, Env:CRAFT_I18N_REQUIRED -ErrorAction SilentlyContinue
+if (-not $env:WGPU_BACKEND) { $env:WGPU_BACKEND = 'vulkan' }
 if (-not $Prova -and -not (Run 'Eseguo i test (può volerci più di mezz''ora)' { cargo test --workspace -j 4 })) { Park 'alcuni test non sono passati' }
+$env:CRAFT_I18N_DIR = $i18n
+$env:CRAFT_I18N_REQUIRED = '1'
 
 # ---- 5. su main --------------------------------------------------------------------------------
 GitOk add -A
