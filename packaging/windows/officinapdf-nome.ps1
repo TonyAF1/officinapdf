@@ -3,8 +3,10 @@
 # aggiorna-da-pdfcraft.ps1 applies it to PdfCraft's source before merging it, and
 # officinapdf-traduzioni.ps1 to PdfCraft's translation catalogs.
 
-# Lines where "PdfCraft" stays: credits, the licence and test texts that name it on purpose.
-$OfficinaKeep = 'Based on PdfCraft|Basato su PdfCraft|based on PdfCraft|PdfCraft contributors|PdfCraft patch:|PdfCraft rewraps|github\.com/storytold/pdfcraft'
+# Lines where "PdfCraft" stays: credits, the licence and test texts that name it on purpose, and
+# `sRGB (PdfCraft)`, the name inside the colour profile that the shared craft-cms library builds:
+# a test compares it byte for byte with the copy kept here.
+$OfficinaKeep = 'Based on PdfCraft|Basato su PdfCraft|based on PdfCraft|PdfCraft contributors|PdfCraft patch:|PdfCraft rewraps|github\.com/storytold/pdfcraft|sRGB \(PdfCraft\)'
 $OfficinaUtf8 = New-Object System.Text.UTF8Encoding($false)
 
 # The text with OfficinaPDF's name in place of PdfCraft's, line by line.
