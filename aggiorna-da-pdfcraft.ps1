@@ -35,7 +35,7 @@ param(
   [switch] $Automatico,
   # Per chi risolve i conflitti a mano: lascia l'unione a metà nel ramo di prova invece di annullarla.
   [switch] $LasciaConflitti,
-  # Per provare lo script: salta i test e i pacchetti, si ferma dopo aver portato l'unione su main.
+  # Per provare lo script: controlla che l'unione riesca, poi la butta via. Non tocca main, niente test né pacchetti.
   [switch] $Prova
 )
 $ErrorActionPreference = 'Stop'
@@ -293,6 +293,14 @@ if (-not $Prova) {
 }
 
 # ---- 5. su main --------------------------------------------------------------------------------
+if ($Prova) {
+  # A trial run never reaches main: an untested merge there would be the next version's base.
+  GitOk reset --quiet --hard
+  GitOk switch --quiet main
+  GitOk branch --quiet -D $Branch
+  Say 'Prova finita: l''unione riesce. main non è stato toccato.' Green
+  Finish 0
+}
 GitOk add -A
 if (git status --porcelain) { GitOk commit --quiet -m "OfficinaPDF $Versione" }
 GitOk switch --quiet main
@@ -301,7 +309,6 @@ GitOk branch --quiet -d $Branch
 Say 'Aggiornamento portato su main.' Green
 
 # ---- 6. pacchetti ------------------------------------------------------------------------------
-if ($Prova) { Say 'Prova finita: niente test, pacchetti e installazione.' Green; Finish 0 }
 Say "Creo installer e versione portatile in $Out (circa 15 minuti)"
 try { & (Join-Path $Root 'packaging\windows\package-officinapdf.ps1') -OutDir $Out | Out-Host }
 catch { Stop-Here "la creazione dei pacchetti non è riuscita: $_ (il ramo main contiene già l'aggiornamento, manca solo il pacchetto)." }
