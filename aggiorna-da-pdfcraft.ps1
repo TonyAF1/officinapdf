@@ -49,9 +49,11 @@ Set-Location $Root
 $env:PATH = "$env:PATH;$env:USERPROFILE\.dotnet\tools"
 if ($Automatico) { $Installa = $true }
 $Versions = Join-Path (Split-Path $Root) 'Versioni'
+$Clock = [Diagnostics.Stopwatch]::StartNew()
 
 function Say([string] $Text, [string] $Color = 'Cyan') { Write-Host "`n==> $Text" -ForegroundColor $Color }
 function Finish([int] $Code) {
+  if (-not $SoloControllo -and $Clock.Elapsed.TotalMinutes -ge 1) { Write-Host "`nDurata: $([int]$Clock.Elapsed.TotalMinutes) minuti." }
   try { Stop-Transcript | Out-Null } catch { }
   if ($Automatico) { Write-Host ''; Read-Host 'Premi Invio per chiudere questa finestra' | Out-Null }
   exit $Code
@@ -64,10 +66,20 @@ function Stop-Here([string] $Text) {
 }
 function GitOk { & git.exe @args; if ($LASTEXITCODE -ne 0) { throw "git $($args -join ' ') non riuscito" } }
 function GitText { $r = & git.exe @args; if ($LASTEXITCODE -ne 0) { throw "git $($args -join ' ') non riuscito" }; return ($r -join "`n").Trim() }
-function Run([string] $What, [scriptblock] $Block) {
+# cargo writes its progress ("Compiling", "Running") to stderr. Turned into plain text, it
+# shows in the normal colour and reaches the log, instead of looking like red errors.
+function Plain { process { "$_" } }
+# Runs cargo test again with these arguments, as the whole run did: --workspace, so cargo
+# reuses what that run built instead of compiling for minutes with another set of features.
+# True when it passed and ran at least one test (a filter that matches nothing passes empty).
+# On screen only what matters; the many test programs that ran nothing stay out.
+function Test-Again([string] $What, [string[]] $Extra) {
   Say $What
-  & $Block | Out-Host
-  return ($LASTEXITCODE -eq 0)
+  & cargo test --workspace -j 4 --no-fail-fast @Extra 2>&1 | Plain | Tee-Object -Variable seen |
+    Where-Object { $_ -cmatch '^test (?!result: ok\. 0 passed; 0 failed)|panicked|^---- |^\s*(left|right):|^error|Compiling|Finished' } | Out-Host
+  $code = $LASTEXITCODE
+  $ran = @($seen | Where-Object { $_ -match '^test result: ok\. [1-9]\d* passed' }).Count
+  return ($code -eq 0 -and $ran -gt 0)
 }
 # PdfCraft's font archive in ..\craft-fonts, at the commit its CI names. $null (and a warning) when
 # that commit can't be found or fetched: the tests then run without it.
@@ -122,6 +134,16 @@ trap {
 if (-not $SoloControllo) {
   New-Item -ItemType Directory -Force $Versions | Out-Null
   try { Start-Transcript -Path (Join-Path $Versions "aggiornamento-$(Get-Date -Format 'yyyy-MM-dd-HHmmss').log") | Out-Null } catch { }
+  # One update at a time: a second one started meanwhile (from Aiuto > Verifica aggiornamenti,
+  # say) would work on the same branch and folders. The file stays locked while this process
+  # runs and is let go however it ends, even if the window is closed.
+  $lockPath = Join-Path $Root 'target\aggiornamento-in-corso.lock'
+  New-Item -ItemType Directory -Force (Split-Path $lockPath) | Out-Null
+  try { $Lock = [IO.File]::Open($lockPath, 'OpenOrCreate', 'ReadWrite', 'None') }
+  catch {
+    Write-Host "`nUn altro aggiornamento di OfficinaPDF è già in corso in un'altra finestra: aspetta che finisca." -ForegroundColor Yellow
+    Finish 0
+  }
 }
 
 # ---- 1. novità? --------------------------------------------------------------------------------
@@ -261,8 +283,14 @@ if (-not $Prova) {
   foreach ($name in $forTests.Keys) { $before[$name] = [Environment]::GetEnvironmentVariable($name); Set-Item "Env:$name" $forTests[$name] }
   Say 'Eseguo i test (può volerci più di mezz''ora)'
   Write-Host 'Durante i test possono comparire da sole finestre di Windows "Apri" o "Salva": sono dei test, si possono ignorare o chiudere.'
-  & cargo test --workspace -j 4 --no-fail-fast 2>&1 | Tee-Object -Variable testOutput | Out-Host
+  & cargo test --workspace -j 4 --no-fail-fast 2>&1 | Plain | Tee-Object -Variable testOutput | Out-Host
   $ok = ($LASTEXITCODE -eq 0)
+  $firstPassed = 0
+  foreach ($line in $testOutput) {
+    $m = [regex]::Match($line, '^test result: \w+\. (\d+) passed')
+    if ($m.Success) { $firstPassed += [int]$m.Groups[1].Value }
+  }
+  $retried = New-Object System.Collections.Generic.List[string]
   if (-not $ok) {
     # A few of PdfCraft's tests wait a fixed time for a background job, or share state with
     # their neighbours, and fail only while every other test is running. Each test that failed
@@ -271,22 +299,29 @@ if (-not $Prova) {
     $failed = @(Get-FailedTests $testOutput)
     if ($failed.Count -gt 0) {
       $ok = $true
+      Write-Host "`nAl primo giro qualche test non è passato. Capita con alcuni test di PdfCraft: insieme a tutti gli altri a volte non finiscono in tempo, da soli passano. Li riprovo uno per uno: è un problema solo se alla fine compare *** FERMATO." -ForegroundColor Yellow
       foreach ($group in $failed) {
-        $cargoArgs = @($group.Group -split ' ')
         if ($group.Tests.Count -eq 0) {
-          if (-not (Run "Riprovo il gruppo di test: $($group.Group)" { cargo test @cargoArgs -j 4 })) { $ok = $false }
+          # The group's targets without its package: --workspace keeps the build of the whole run.
+          $tokens = @($group.Group -split ' ')
+          $targets = for ($i = 0; $i -lt $tokens.Count; $i++) { if ($tokens[$i] -eq '-p') { $i++; continue }; $tokens[$i] }
+          if (Test-Again "Riprovo il gruppo di test: $($group.Group)" @($targets)) { $retried.Add($group.Group) } else { $ok = $false }
           continue
         }
         foreach ($test in $group.Tests) {
           $passed = $false
           foreach ($try in 1..3) {
-            if (Run "Riprovo da solo il test $test (tentativo $try di 3)" { cargo test @cargoArgs -j 4 -- --exact $test --test-threads=1 }) { $passed = $true; break }
+            if (Test-Again "Riprovo da solo il test $test (tentativo $try di 3)" @('--', '--exact', $test, '--test-threads=1')) { $passed = $true; break }
           }
-          if (-not $passed) { Write-Host "Il test $test non passa nemmeno da solo." -ForegroundColor Yellow; $ok = $false }
+          if ($passed) { $retried.Add($test) } else { Write-Host "Il test $test non passa nemmeno da solo." -ForegroundColor Yellow; $ok = $false }
         }
       }
     }
   }
+  $TestSummary = if (-not $ok) { $null }
+    elseif ($retried.Count -eq 0) { "Test: tutti passati ($firstPassed)." }
+    else { "Test: $firstPassed passati al primo giro, $($retried.Count) passati riprovando da soli ($($retried -join ', ')). Tutto a posto." }
+  if ($TestSummary) { Say $TestSummary Green }
   # Put back, so the OfficinaPDF started at the end isn't told to speak English.
   foreach ($name in $forTests.Keys) { if ($null -eq $before[$name]) { Remove-Item "Env:$name" } else { Set-Item "Env:$name" $before[$name] } }
   if (-not $ok) { Park 'alcuni test non sono passati' }
@@ -325,7 +360,15 @@ if ($Installa) {
   if ($open.Count -gt 0) {
     Write-Host 'Chiudo OfficinaPDF (se chiede di salvare un documento, rispondi nella sua finestra)…'
     $open | ForEach-Object { [void]$_.CloseMainWindow() }
-    while (Get-Process officinapdf -ErrorAction SilentlyContinue) { Start-Sleep -Seconds 1 }
+    # Answering Annulla to its "save?" question keeps it open: say so now and then, and give up
+    # after ten minutes instead of waiting for ever. The new version is ready either way.
+    $waited = 0
+    while (Get-Process officinapdf -ErrorAction SilentlyContinue) {
+      Start-Sleep -Seconds 1
+      $waited++
+      if ($waited -ge 600) { Stop-Here "OfficinaPDF non si è chiuso in 10 minuti, quindi la nuova versione non è stata installata. Chiudi OfficinaPDF e installala a mano: $msi" }
+      if ($waited % 30 -eq 0) { Write-Host 'Aspetto che OfficinaPDF si chiuda: se ti chiede di salvare un documento, rispondi nella sua finestra (o chiudilo tu).' -ForegroundColor Yellow }
+    }
   }
   # An update keeps the copy where it is: for all users when that is how it was installed.
   $all = [bool](Get-ItemProperty 'HKLM:\Software\OfficinaPDF' -Name InstallDir -ErrorAction SilentlyContinue)
@@ -339,4 +382,6 @@ if ($Installa) {
   if ($exe -and (Test-Path $exe)) { Start-Process $exe }
   Say "OfficinaPDF $Versione è installata." Green
 }
+Write-Host "`nRiepilogo: OfficinaPDF $Versione, con $quante di PdfCraft $Upstream." -ForegroundColor Green
+if ($TestSummary) { Write-Host $TestSummary -ForegroundColor Green }
 Finish 0
