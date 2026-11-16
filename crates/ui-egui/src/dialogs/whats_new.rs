@@ -24,6 +24,7 @@ pub struct Release {
 }
 
 pub const RELEASES: &[Release] = &[
+    Release { version: "0.8.0", date: "novembre 2026", notes: &["Aggiornamento a PdfCraft 0.21.1: 41 modifiche tra correzioni e novità."] },
     Release { version: "0.7.0", date: "novembre 2026", notes: &["Aggiornamento a PdfCraft 0.21.1: 9 modifiche tra correzioni e novità."] },
     Release { version: "0.6.0", date: "novembre 2026", notes: &["Aggiornamento a PdfCraft 0.21.1: 13 modifiche tra correzioni e novità."] },
     Release {
