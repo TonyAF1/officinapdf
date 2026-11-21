@@ -36,7 +36,12 @@ param(
   # Per chi risolve i conflitti a mano: lascia l'unione a metà nel ramo di prova invece di annullarla.
   [switch] $LasciaConflitti,
   # Per provare lo script: controlla che l'unione riesca, poi la butta via. Non tocca main, niente test né pacchetti.
-  [switch] $Prova
+  [switch] $Prova,
+  # Su GitHub (officinapdf-aggiorna.yml): nessuna finestra, nessuna installazione; i pacchetti vanno
+  # in .\dist e alla fine c'è SHA256SUMS.txt. Il workflow li pubblica.
+  [switch] $Ci,
+  # Salta i test (per una prova a mano su GitHub quando si sa già che i test sono a posto).
+  [switch] $SaltaTest
 )
 $ErrorActionPreference = 'Stop'
 $Root = $PSScriptRoot
@@ -49,6 +54,10 @@ Set-Location $Root
 $env:PATH = "$env:PATH;$env:USERPROFILE\.dotnet\tools"
 if ($Automatico) { $Installa = $true }
 $Versions = Join-Path (Split-Path $Root) 'Versioni'
+# Per il workflow di GitHub: righe che passano ai passi successivi.
+function Set-CiOutput([string] $Name, [string] $Value) {
+  if ($Ci -and $env:GITHUB_OUTPUT) { Add-Content -Path $env:GITHUB_OUTPUT -Value "$Name=$Value" }
+}
 $Clock = [Diagnostics.Stopwatch]::StartNew()
 
 function Say([string] $Text, [string] $Color = 'Cyan') { Write-Host "`n==> $Text" -ForegroundColor $Color }
@@ -132,7 +141,7 @@ trap {
   Finish 1
 }
 
-if (-not $SoloControllo) {
+if (-not $SoloControllo -and -not $Ci) {
   New-Item -ItemType Directory -Force $Versions | Out-Null
   try { Start-Transcript -Path (Join-Path $Versions "aggiornamento-$(Get-Date -Format 'yyyy-MM-dd-HHmmss').log") | Out-Null } catch { }
   # One update at a time: a second one started meanwhile (from Aiuto > Verifica aggiornamenti,
@@ -155,6 +164,7 @@ GitOk fetch --quiet upstream main
 $New = @(git log --oneline HEAD..upstream/main)
 if ($New.Count -eq 0) {
   Say 'Nessuna novità: OfficinaPDF ha già tutti gli aggiornamenti di PdfCraft.' Green
+  Set-CiOutput 'novita' 'false'
   Finish 0
 }
 $quante = if ($New.Count -eq 1) { 'una modifica' } else { "$($New.Count) modifiche" }
@@ -171,7 +181,7 @@ if (-not $Versione) {
   $Versione = "$($p[0]).$([int]$p[1] + 1).0"
 }
 $short = ($Versione -split '\.')[0..1] -join '.'
-$Out = Join-Path $Versions "OfficinaPDF v$short"
+$Out = if ($Ci) { Join-Path $Root 'dist' } else { Join-Path $Versions "OfficinaPDF v$short" }
 if (Test-Path $Out) { Stop-Here "la cartella $Out esiste già: non la sovrascrivo." }
 if (git tag --list "v$Versione") { Stop-Here "la versione $Versione esiste già." }
 $Upstream = [regex]::Match((GitText show upstream/main:Cargo.toml), '(?m)^\[workspace\.package\]\s*\r?\nversion = "([^"]+)"').Groups[1].Value
@@ -267,7 +277,7 @@ Say 'Preparo le traduzioni italiane'
 $env:CRAFT_I18N_DIR = & (Join-Path $Root 'packaging\windows\officinapdf-traduzioni.ps1')
 $env:CRAFT_I18N_REQUIRED = '1'
 & cargo fmt --all | Out-Null
-if (-not $Prova) {
+if (-not $Prova -and -not $SaltaTest) {
   # The tests run as on PdfCraft's own machines: with the catalogs, in English (they look for
   # English labels, and this computer is Italian), and on a graphics driver that works. On this
   # computer the integrated Intel driver crashes the tests that draw, so they use the other
@@ -352,6 +362,16 @@ $leggimi = [IO.File]::ReadAllText((Join-Path $Root 'packaging\windows\officinapd
 [IO.File]::WriteAllText((Join-Path $Out 'LEGGIMI.txt'), $leggimi, $OfficinaUtf8)
 GitOk tag "v$Versione"
 Say "OfficinaPDF $Versione è pronta in $Out" Green
+if ($Ci) {
+  # The checksums the app checks the installer against (craft_update reads SHA256SUMS.txt).
+  $sums = Get-ChildItem $Out -File | Where-Object { $_.Name -match '\.(msi|zip)$' } |
+    ForEach-Object { "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower())  $($_.Name)" }
+  [IO.File]::WriteAllText((Join-Path $Out 'SHA256SUMS.txt'), (($sums -join "`n") + "`n"), $OfficinaUtf8)
+  Set-CiOutput 'novita' 'true'
+  Set-CiOutput 'versione' $Versione
+  $notes = "Aggiornamento a PdfCraft $($Upstream): $quante.`n`n$TestSummary"
+  [IO.File]::WriteAllText((Join-Path $Out 'note.md'), $notes, $OfficinaUtf8)
+}
 
 # ---- 7. installazione --------------------------------------------------------------------------
 if ($Installa) {

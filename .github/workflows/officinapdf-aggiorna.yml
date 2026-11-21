@@ -1,0 +1,102 @@
+name: OfficinaPDF - nuova versione
+
+# Ogni settimana (e a richiesta dalla scheda Actions > "Run workflow"): prende le novità di PdfCraft,
+# le unisce a OfficinaPDF con il suo nome, esegue i test, prepara l'installer e lo pubblica come
+# "Release". Su ogni computer OfficinaPDF controlla queste Release e si aggiorna da solo
+# (crates/ui-egui/src/dialogs/whats_new/update.rs).
+#
+# Il lavoro vero è in aggiorna-da-pdfcraft.ps1 -Ci, lo stesso script che si usa sul PC. Se manca
+# qualcosa (conflitto con PdfCraft, test che non passano) lo script si ferma: non esce nessuna
+# versione e quella di prima resta quella più recente. GitHub manda un'email per la corsa fallita.
+#
+# Serve il segreto PUSH_TOKEN (Settings > Secrets and variables > Actions): un token personale
+# con i permessi "repo" e "workflow". Quello automatico di GitHub non può salvare la cronologia di
+# PdfCraft, che contiene modifiche ai suoi file di automazione.
+
+on:
+  schedule:
+    - cron: "17 3 * * 1"
+  workflow_dispatch:
+    inputs:
+      salta_test:
+        description: "Salta i test (solo per una prova)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: officinapdf-aggiorna
+  cancel-in-progress: false
+
+jobs:
+  aggiorna:
+    runs-on: windows-latest
+    timeout-minutes: 350
+    steps:
+      - name: Controllo del token
+        shell: pwsh
+        env:
+          PUSH_TOKEN: ${{ secrets.PUSH_TOKEN }}
+        run: |
+          if (-not $env:PUSH_TOKEN) {
+            Write-Error 'Manca il segreto PUSH_TOKEN: vedi le istruzioni in .github/workflows/officinapdf-aggiorna.yml'
+            exit 1
+          }
+
+      # Le righe dei file restano come sono nel repository: niente conversione CRLF.
+      - name: Impostazioni di git
+        shell: pwsh
+        run: |
+          git config --global core.autocrlf false
+          git config --global core.longpaths true
+          git config --global user.name 'TonyAF1'
+          git config --global user.email 'TonyAF1@users.noreply.github.com'
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.PUSH_TOKEN }}
+
+      - name: Collego PdfCraft
+        shell: pwsh
+        run: git remote add upstream https://github.com/storytold/pdfcraft.git
+
+      - name: Rust aggiornato
+        shell: pwsh
+        run: |
+          rustup update stable
+          rustup default stable
+          rustc --version
+
+      - name: WiX (crea l'installer)
+        shell: pwsh
+        run: |
+          dotnet tool install --global wix --version 5.0.2
+          "$env:USERPROFILE\.dotnet\tools" | Out-File -Append -Encoding utf8 $env:GITHUB_PATH
+          & "$env:USERPROFILE\.dotnet\tools\wix.exe" extension add -g WixToolset.UI.wixext/5.0.2
+
+      - name: Aggiorna, prova e prepara l'installer
+        id: build
+        shell: pwsh
+        run: |
+          if ('${{ inputs.salta_test }}' -eq 'true') { ./aggiorna-da-pdfcraft.ps1 -Ci -SaltaTest } else { ./aggiorna-da-pdfcraft.ps1 -Ci }
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Salvo l'aggiornamento e pubblico la versione
+        if: steps.build.outputs.novita == 'true'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSIONE: ${{ steps.build.outputs.versione }}
+        run: |
+          git push origin main "v$env:VERSIONE"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $files = @(Get-ChildItem dist -File | Where-Object { $_.Name -match '^(OfficinaPDF-.*\.(msi|zip)|SHA256SUMS\.txt|LEGGIMI\.txt)$' } | ForEach-Object { $_.FullName })
+          foreach ($try in 1..3) {
+            gh release create "v$env:VERSIONE" @files --title "OfficinaPDF $env:VERSIONE" --notes-file dist/note.md --latest
+            if ($LASTEXITCODE -eq 0) { break }
+            Start-Sleep -Seconds 20
+          }
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
