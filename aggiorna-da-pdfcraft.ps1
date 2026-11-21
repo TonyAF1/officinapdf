@@ -216,9 +216,13 @@ Say 'Unisco le novità'
 GitOk switch --quiet -c $Branch $Ours
 git merge --no-commit --no-ff $NewR | Out-Host
 # What each side always keeps: PdfCraft's lock file (cargo brings it up to date), OfficinaPDF's
-# own README (PdfCraft's is kept beside it), and no catalogs in the repository.
+# own README (PdfCraft's is kept beside it), and no catalogs in the repository. ATTRIBUTION.md is
+# written by `cargo xtask assets --write` from ATTRIBUTION.toml, which merges line by line: when
+# both sides changed the table, it is made again from the merged list (below).
+$regenAttribution = $false
 foreach ($f in @(git diff --name-only --diff-filter=U)) {
-  if ($f -eq 'Cargo.lock') { GitOk checkout --theirs -- $f; GitOk add -- $f }
+  if ($f -eq 'ATTRIBUTION.md') { GitOk checkout --ours -- $f; GitOk add -- $f; $regenAttribution = $true }
+  elseif ($f -eq 'Cargo.lock') { GitOk checkout --theirs -- $f; GitOk add -- $f }
   elseif ($f -eq 'README.md') { GitOk checkout --ours -- $f; GitOk add -- $f }
 }
 $readme = GitText show upstream/main:README.md
@@ -242,6 +246,11 @@ $merge = GitText commit-tree $tree -p main -p upstream/main -m "Merge PdfCraft $
 GitOk merge --quit
 GitOk update-ref "refs/heads/$Branch" $merge
 [void](Convert-OfficinaTree $Root $null)
+if ($regenAttribution) {
+  Say 'Rifaccio ATTRIBUTION.md dall''elenco unito (ATTRIBUTION.toml)'
+  & cargo xtask assets --write 2>&1 | Plain | Out-Host
+  if ($LASTEXITCODE -ne 0) { Park 'cargo xtask assets --write non è riuscito: l''elenco dei materiali (ATTRIBUTION.toml) non torna' }
+}
 # OfficinaPDF shows no link to PdfCraft's Discord: one that PdfCraft added since stops the update.
 $discord = @(git grep -n -I -i -E 'discord\.(gg|com)' -- apps crates)
 if ($discord.Count -gt 0) {
