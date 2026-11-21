@@ -131,6 +131,7 @@ jobs:
 
       # La Release si crea con l'API (la risposta completa finisce nel registro se GitHub rifiuta),
       # poi si aggiungono i file. Rifatto da capo, riusa la Release che c'è già.
+      # Sempre --repo: con il remote "upstream" gh sceglierebbe il repository di PdfCraft.
       - name: Pubblico la versione
         if: steps.build.outputs.novita == 'true' || steps.rebuild.outputs.versione != ''
         shell: pwsh
@@ -152,6 +153,6 @@ jobs:
               exit 1
             }
           }
-          gh release upload $tag @files --clobber
+          gh release upload $tag @files --clobber --repo $repo
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          gh release view $tag
+          gh release view $tag --repo $repo
