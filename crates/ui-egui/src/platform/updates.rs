@@ -74,6 +74,9 @@ impl Updates {
     pub(crate) fn exiting(&mut self) {
         #[cfg(not(target_arch = "wasm32"))]
         self.updater.start_pending_update();
+        // OfficinaPDF: an update downloaded from its own releases installs here.
+        #[cfg(not(target_arch = "wasm32"))]
+        crate::dialogs::whats_new::finish_on_exit();
         #[cfg(test)]
         {
             self.exits += 1;

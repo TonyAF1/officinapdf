@@ -2,8 +2,8 @@
 //! are written in Italian only, like the fork they describe; add a row to [`RELEASES`] with every
 //! version (`aggiorna-da-pdfcraft.ps1` adds one by itself).
 //!
-//! Above the notes, Help ▸ Check for updates: whether PdfCraft's open-source code has something
-//! new, and the button that makes and installs the next OfficinaPDF from it (`update`).
+//! Above the notes, Help ▸ Check for updates: whether GitHub has a newer OfficinaPDF, and the
+//! button that downloads it, with a progress bar, and installs it (`update`).
 
 use egui::RichText;
 
@@ -83,16 +83,16 @@ pub const RELEASES: &[Release] = &[
 ];
 
 impl PdfCraftApp {
-    /// The desktop app turns on the updates from PdfCraft's source: Help ▸ Check for updates, and
-    /// the check at start (which the preference "Check for updates when OfficinaPDF starts" can
-    /// still turn off). Tests never call this, so they never run git.
+    /// The desktop app turns on the updates from OfficinaPDF's releases: Help ▸ Check for updates,
+    /// and the check at start (which the preference "Check for updates when OfficinaPDF starts" can
+    /// still turn off). Tests never call this, so they never reach the network.
     #[cfg(not(target_arch = "wasm32"))]
     pub fn set_source_update_check(&mut self) {
         update::enable();
     }
 }
 
-/// Help ▸ Check for updates: ask whether PdfCraft has something new and show the answer.
+/// Help ▸ Check for updates: ask whether there is a newer OfficinaPDF and show the answer.
 pub(crate) fn check_for_updates(app: &mut PdfCraftApp) {
     #[cfg(not(target_arch = "wasm32"))]
     if update::enabled() {
@@ -105,7 +105,13 @@ pub(crate) fn check_for_updates(app: &mut PdfCraftApp) {
     app.check_for_updates();
 }
 
-/// Each frame: the check at start, which opens this window when PdfCraft has something new.
+/// The program is exiting: an update that was asked to install now starts its installer.
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) fn finish_on_exit() {
+    update::on_exit();
+}
+
+/// Each frame: the check at start, which opens this window when a newer version exists.
 pub(super) fn poll(app: &mut PdfCraftApp) {
     #[cfg(not(target_arch = "wasm32"))]
     {
@@ -113,8 +119,14 @@ pub(super) fn poll(app: &mut PdfCraftApp) {
         if update::poll(app.update_check_at_start, settings.as_deref()) && app.dialog.is_none() {
             app.dialog = Some(Dialog::WhatsNew);
         }
-        // The answer comes from another thread: look again soon, even with no input.
-        if update::status() == update::Status::Checking
+        // "Riavvia e installa": the normal way of closing, which asks about unsaved documents.
+        if update::take_quit_request()
+            && let Some(ctx) = &app.ctx
+        {
+            ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+        }
+        // The answers come from another thread: look again soon, even with no input.
+        if matches!(update::status(), update::Status::Checking | update::Status::Downloading { .. })
             && let Some(ctx) = &app.ctx
         {
             ctx.request_repaint_after(std::time::Duration::from_millis(300));
@@ -136,31 +148,27 @@ fn update_ui(ui: &mut egui::Ui, t: &Tokens) {
         .inner_margin(egui::Margin::same(12))
         .show(ui, |ui| {
             ui.set_width(ui.available_width());
-            ui.label(RichText::new("Aggiornamenti da PdfCraft").font(theme::semibold(15.0)));
+            ui.label(RichText::new("Aggiornamenti").font(theme::semibold(15.0)));
             ui.add_space(4.0);
             let (text, button) = match &status {
-                Status::Idle => ("OfficinaPDF prende le novità direttamente dal codice open source di PdfCraft.".to_owned(), Some("Verifica aggiornamenti")),
-                Status::Checking => ("Controllo le novità di PdfCraft…".to_owned(), None),
-                Status::UpToDate => ("OfficinaPDF ha già tutte le novità di PdfCraft.".to_owned(), Some("Verifica di nuovo")),
-                Status::Available => (
-                    "PdfCraft ha pubblicato delle novità. \"Aggiorna ora\" le scarica, prepara la nuova versione di OfficinaPDF e la installa: ci vuole \
-                     circa un'ora e intanto puoi continuare a lavorare. Alla fine OfficinaPDF si chiude e si riapre aggiornato."
-                        .to_owned(),
+                Status::Idle => ("OfficinaPDF controlla da solo se esiste una versione più nuova.".to_owned(), Some("Verifica aggiornamenti")),
+                Status::Checking => ("Cerco una versione più nuova…".to_owned(), None),
+                Status::UpToDate => (format!("OfficinaPDF {} è la versione più recente.", env!("CARGO_PKG_VERSION")), Some("Verifica di nuovo")),
+                Status::Available(version) => (
+                    format!("È disponibile OfficinaPDF {version}. \"Aggiorna ora\" la scarica: poi OfficinaPDF si chiude e si riapre aggiornato."),
                     Some("Aggiorna ora"),
                 ),
-                Status::Started => (
-                    "Aggiornamento avviato in una finestra a parte: lasciala aperta. Alla fine OfficinaPDF si chiude e si riapre aggiornato. Se qualcosa \
-                     non va, la finestra lo dice e OfficinaPDF resta com'è."
-                        .to_owned(),
-                    None,
+                Status::Downloading { done, total } => {
+                    let fraction = if *total > 0 { (*done as f32 / *total as f32).clamp(0.0, 1.0) } else { 0.0 };
+                    ui.add(egui::ProgressBar::new(fraction).text("OfficinaPDF in aggiornamento…").animate(true));
+                    ("Scarico la nuova versione: puoi continuare a lavorare.".to_owned(), None)
+                }
+                Status::Ready(version) => (
+                    format!("OfficinaPDF {version} è pronta. Per finire OfficinaPDF si chiude e si riapre aggiornato (ti chiede prima di salvare i documenti aperti)."),
+                    Some("Riavvia e installa"),
                 ),
-                Status::NoSource => (
-                    "Questa copia di OfficinaPDF non trova la cartella del suo codice sorgente: l'aggiornamento automatico funziona solo sul computer \
-                     dove OfficinaPDF viene preparato."
-                        .to_owned(),
-                    None,
-                ),
-                Status::Failed(why) => (format!("Non riesco a controllare gli aggiornamenti: {why}."), Some("Riprova")),
+                Status::Installing => ("OfficinaPDF si sta chiudendo per installare l'aggiornamento…".to_owned(), None),
+                Status::Failed(why) => (format!("Non riesco ad aggiornare: {why}."), Some("Riprova")),
             };
             ui.horizontal_wrapped(|ui| {
                 if status == Status::Checking {
@@ -171,9 +179,13 @@ fn update_ui(ui: &mut egui::Ui, t: &Tokens) {
             });
             if let Some(label) = button {
                 ui.add_space(8.0);
-                let primary = status == Status::Available;
+                let primary = matches!(status, Status::Available(_) | Status::Ready(_));
                 if widgets::pill_button(ui, label, primary).clicked() {
-                    if primary { update::start() } else { update::check_now() }
+                    match status {
+                        Status::Available(_) => update::start(),
+                        Status::Ready(_) => update::install_now(),
+                        _ => update::check_now(),
+                    }
                 }
             }
         });
