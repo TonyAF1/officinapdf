@@ -22,6 +22,10 @@ on:
         description: "Salta i test (solo per una prova)"
         type: boolean
         default: false
+      ripubblica:
+        description: "Solo ripubblica una versione già salvata (es. 0.9.0): ricrea l'installer da quel tag, niente unione né test"
+        type: string
+        default: ""
 
 permissions:
   contents: write
@@ -79,24 +83,75 @@ jobs:
 
       - name: Aggiorna, prova e prepara l'installer
         id: build
+        if: inputs.ripubblica == ''
         shell: pwsh
         run: |
           if ('${{ inputs.salta_test }}' -eq 'true') { ./aggiorna-da-pdfcraft.ps1 -Ci -SaltaTest } else { ./aggiorna-da-pdfcraft.ps1 -Ci }
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-      - name: Salvo l'aggiornamento e pubblico la versione
+      # Per una versione già su main ma senza Release (pubblicazione fallita): ricrea i pacchetti da
+      # quel tag, come li fa lo script.
+      - name: Ricreo l'installer di una versione già salvata
+        id: rebuild
+        if: inputs.ripubblica != ''
+        shell: pwsh
+        env:
+          VERSIONE: ${{ inputs.ripubblica }}
+        run: |
+          if ($env:VERSIONE -notmatch '^\d+\.\d+\.\d+$') { Write-Error "Versione non valida: $env:VERSIONE"; exit 1 }
+          git checkout --quiet "v$env:VERSIONE"
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          ./packaging/windows/package-officinapdf.ps1 -OutDir dist
+          . ./packaging/windows/officinapdf-nome.ps1
+          $leggimi = [IO.File]::ReadAllText('packaging/windows/officinapdf-leggimi.txt').Replace('{VERSIONE}', $env:VERSIONE)
+          [IO.File]::WriteAllText('dist/LEGGIMI.txt', $leggimi, $OfficinaUtf8)
+          $sums = Get-ChildItem dist -File | Where-Object { $_.Name -match '\.(msi|zip)$' } |
+            ForEach-Object { "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower())  $($_.Name)" }
+          [IO.File]::WriteAllText('dist/SHA256SUMS.txt', (($sums -join "`n") + "`n"), $OfficinaUtf8)
+          [IO.File]::WriteAllText('dist/note.md', "OfficinaPDF $env:VERSIONE.", $OfficinaUtf8)
+          "versione=$env:VERSIONE" | Out-File -Append -Encoding utf8 $env:GITHUB_OUTPUT
+
+      # I pacchetti restano scaricabili dalla pagina della corsa anche se la pubblicazione fallisce.
+      - name: Conservo i pacchetti
+        if: steps.build.outputs.novita == 'true' || steps.rebuild.outputs.versione != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: officinapdf-pacchetti
+          path: dist/
+          retention-days: 30
+
+      - name: Salvo l'aggiornamento
         if: steps.build.outputs.novita == 'true'
         shell: pwsh
         env:
-          GH_TOKEN: ${{ github.token }}
           VERSIONE: ${{ steps.build.outputs.versione }}
         run: |
           git push origin main "v$env:VERSIONE"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      # La Release si crea con l'API (la risposta completa finisce nel registro se GitHub rifiuta),
+      # poi si aggiungono i file. Rifatto da capo, riusa la Release che c'è già.
+      - name: Pubblico la versione
+        if: steps.build.outputs.novita == 'true' || steps.rebuild.outputs.versione != ''
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSIONE: ${{ steps.build.outputs.versione || steps.rebuild.outputs.versione }}
+        run: |
+          $tag = "v$env:VERSIONE"
+          $repo = $env:GITHUB_REPOSITORY
           $files = @(Get-ChildItem dist -File | Where-Object { $_.Name -match '^(OfficinaPDF-.*\.(msi|zip)|SHA256SUMS\.txt|LEGGIMI\.txt)$' } | ForEach-Object { $_.FullName })
-          foreach ($try in 1..3) {
-            gh release create "v$env:VERSIONE" @files --title "OfficinaPDF $env:VERSIONE" --notes-file dist/note.md --latest
-            if ($LASTEXITCODE -eq 0) { break }
-            Start-Sleep -Seconds 20
+          if ($files.Count -lt 3) { Write-Error "Mancano i pacchetti in dist: $($files -join ', ')"; exit 1 }
+          gh api "repos/$repo/releases/tags/$tag" --silent 2>$null
+          if ($LASTEXITCODE -ne 0) {
+            $body = [IO.File]::ReadAllText('dist/note.md')
+            gh api "repos/$repo/releases" -X POST -f tag_name="$tag" -f name="OfficinaPDF $env:VERSIONE" -f body="$body" -f make_latest=true --include
+            if ($LASTEXITCODE -ne 0) {
+              Write-Host 'GitHub ha rifiutato la Release. Le Release che vede (anche le bozze):'
+              gh api "repos/$repo/releases" --jq '.[] | "\(.tag_name) draft=\(.draft) id=\(.id)"'
+              exit 1
+            }
           }
+          gh release upload $tag @files --clobber
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          gh release view $tag
