@@ -59,6 +59,14 @@ function Convert-OfficinaTree([string] $Root, [string] $Version) {
       $new = Convert-OfficinaText $text
       if ($new -cne $text) { [IO.File]::WriteAllText($path, $new, $OfficinaUtf8); $changed++ }
     }
+    # PdfCraft's own GitHub automation (its checks, releases and bot) can't run on OfficinaPDF's
+    # repository: it calls PdfCraft's organisation and secrets, and would fail at every push.
+    # OfficinaPDF's own workflows are the files named officinapdf-*.yml.
+    foreach ($f in @(git ls-files '.github')) {
+      if ($f -match '^\.github/workflows/officinapdf-[\w-]+\.yml$') { continue }
+      Remove-Item -LiteralPath (Join-Path $Root $f) -Force -ErrorAction SilentlyContinue
+      $changed++
+    }
     if ($Version) {
       $path = Join-Path $Root 'Cargo.toml'
       $text = [IO.File]::ReadAllText($path)

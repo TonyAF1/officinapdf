@@ -84,8 +84,9 @@ function Test-Again([string] $What, [string[]] $Extra) {
 # PdfCraft's font archive in ..\craft-fonts, at the commit its CI names. $null (and a warning) when
 # that commit can't be found or fetched: the tests then run without it.
 function Get-CraftFonts {
-  $ci = Join-Path $Root '.github\workflows\ci.yml'
-  $rev = if (Test-Path $ci) { [regex]::Match([IO.File]::ReadAllText($ci), 'craft-fonts-ref:\s*([0-9a-f]{40})').Groups[1].Value }
+  # OfficinaPDF keeps none of PdfCraft's workflows: the commit is read from PdfCraft's own.
+  $ci = (& git.exe show upstream/main:.github/workflows/ci.yml 2>$null) -join "`n"
+  $rev = [regex]::Match($ci, 'craft-fonts-ref:\s*([0-9a-f]{40})').Groups[1].Value
   if (-not $rev) { Write-Host 'Non trovo la versione di craft-fonts usata da PdfCraft: test senza i suoi font.' -ForegroundColor Yellow; return $null }
   $clone = Join-Path (Split-Path $Root) 'craft-fonts'
   if (-not (Test-Path (Join-Path $clone '.git'))) {
