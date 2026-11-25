@@ -314,8 +314,10 @@ fn spawn_installer(msi: &Path) -> Result<(), String> {
     std::fs::write(&script, installer_script(std::process::id(), msi)).map_err(|e| format!("non riesco a scrivere {} ({e})", script.display()))?;
     let mut command = std::process::Command::new("powershell.exe");
     command.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-WindowStyle", "Hidden", "-File"]).arg(&script);
-    // CREATE_NO_WINDOW | CREATE_NEW_PROCESS_GROUP | DETACHED_PROCESS: it outlives this program.
-    std::os::windows::process::CommandExt::creation_flags(&mut command, 0x0800_0000 | 0x0000_0200 | 0x0000_0008);
+    // CREATE_NO_WINDOW | CREATE_NEW_PROCESS_GROUP: hidden, and it outlives this program. Not
+    // DETACHED_PROCESS: Windows PowerShell without a console quits before running the script
+    // (0.9.0 and 0.10.0 never installed their update because of it).
+    std::os::windows::process::CommandExt::creation_flags(&mut command, 0x0800_0000 | 0x0000_0200);
     command.spawn().map(|_| ()).map_err(|e| format!("PowerShell non è disponibile ({e})"))
 }
 
