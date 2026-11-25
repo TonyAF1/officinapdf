@@ -24,6 +24,7 @@ pub struct Release {
 }
 
 pub const RELEASES: &[Release] = &[
+    Release { version: "0.10.2", date: "novembre 2026", notes: &["Dopo un aggiornamento il file scaricato viene cancellato da solo."] },
     Release {
         version: "0.10.1",
         date: "novembre 2026",

@@ -97,9 +97,36 @@ pub(super) fn status() -> Status {
 
 /// The desktop app turns these updates, and their check at start, on.
 pub(super) fn enable() {
-    let mut s = state();
-    s.enabled = true;
-    s.at_start = true;
+    {
+        let mut s = state();
+        s.enabled = true;
+        s.at_start = true;
+    }
+    clean_leftovers(&std::env::temp_dir().join(DOWNLOAD_DIR), env!("CARGO_PKG_VERSION"));
+}
+
+/// Removes the download folder once its installer is no newer than this program: it was
+/// installed (or is older), so it is only taking space. A newer one stays, as does a folder with
+/// no installer (a download still coming down in another copy of the program).
+fn clean_leftovers(dir: &Path, current: &str) {
+    let Ok(entries) = std::fs::read_dir(dir) else { return };
+    let mut installers = 0;
+    for entry in entries.flatten() {
+        let name = entry.file_name().to_string_lossy().into_owned();
+        let Some(version) = name.strip_prefix("OfficinaPDF-").and_then(|n| n.strip_suffix(INSTALLER_SUFFIX)) else { continue };
+        installers += 1;
+        if version_key(version) > version_key(current) {
+            return;
+        }
+    }
+    if installers > 0 {
+        let _ = std::fs::remove_dir_all(dir);
+    }
+}
+
+/// A version's numbers, for ordering ("0.10.1" after "0.9.0"); what isn't a number counts as 0.
+fn version_key(version: &str) -> Vec<u64> {
+    version.split('.').map(|part| part.parse().unwrap_or(0)).collect()
 }
 
 pub(super) fn enabled() -> bool {
@@ -293,6 +320,7 @@ pub(super) fn on_exit() {
 /// when that is how it was installed.
 #[cfg(any(windows, test))]
 fn installer_script(pid: u32, msi: &Path) -> String {
+    let dir = msi.parent().unwrap_or(msi).display().to_string().replace('\'', "''");
     let msi = msi.display().to_string().replace('\'', "''");
     format!(
         "$ErrorActionPreference = 'Continue'\n\
@@ -301,6 +329,7 @@ fn installer_script(pid: u32, msi: &Path) -> String {
          $arguments = @('/i', '\"{msi}\"', '/passive', '/norestart')\n\
          if ($all) {{ $arguments += 'ALLUSERS=1' }}\n\
          $code = (Start-Process msiexec.exe -ArgumentList $arguments -Wait -PassThru).ExitCode\n\
+         if ($code -eq 0 -or $code -eq 3010) {{ Remove-Item -LiteralPath '{dir}' -Recurse -Force -ErrorAction SilentlyContinue }}\n\
          $key = if ($all) {{ 'HKLM:\\Software\\OfficinaPDF' }} else {{ 'HKCU:\\Software\\OfficinaPDF' }}\n\
          $dir = (Get-ItemProperty $key -Name InstallDir -ErrorAction SilentlyContinue).InstallDir\n\
          $exe = if ($dir) {{ Join-Path $dir 'officinapdf.exe' }}\n\
@@ -374,6 +403,29 @@ mod tests {
         assert!(script.contains(r#"'"C:\Temp\it''s\OfficinaPDF-0.9.0-x64.msi"'"#), "a quote in the path is doubled: {script}");
         assert!(script.contains("/passive"));
         assert!(script.contains("Start-Process $exe"));
+        let install = script.find("msiexec").unwrap_or(usize::MAX);
+        let clean = script.find(r"Remove-Item -LiteralPath 'C:\Temp\it''s'").unwrap_or(0);
+        assert!(clean > install, "the downloaded folder goes after the installation: {script}");
+    }
+
+    #[test]
+    fn an_installed_download_is_cleaned_up_and_a_newer_one_kept() {
+        let root = std::env::temp_dir().join(format!("officinapdf-pulizia-{}", std::process::id()));
+        let old = root.join("installata");
+        let new = root.join("nuova");
+        let empty = root.join("in-corso");
+        for (dir, file) in [(&old, "OfficinaPDF-0.9.0-x64.msi"), (&new, "OfficinaPDF-0.11.0-x64.msi")] {
+            std::fs::create_dir_all(dir).unwrap();
+            std::fs::write(dir.join(file), b"msi").unwrap();
+        }
+        std::fs::create_dir_all(&empty).unwrap();
+        for dir in [&old, &new, &empty] {
+            clean_leftovers(dir, "0.10.1");
+        }
+        assert!(!old.exists(), "an installer no newer than this program goes");
+        assert!(new.exists(), "a newer installer stays");
+        assert!(empty.exists(), "a folder without an installer stays");
+        let _ = std::fs::remove_dir_all(&root);
     }
 
     #[test]
